@@ -2,3 +2,12 @@ docs/LocalizeSORTv2_Project_Tracker.xlsx
 docs/.~lock.LocalizeSORTv2_Project_Tracker.xlsx#
 data
 CUT3R
+
+# Python
+__pycache__/
+*.pyc
+*.egg-info/
+.venv/
+.pytest_cache/
+build/
+dist/
