@@ -2,6 +2,7 @@ docs/LocalizeSORTv2_Project_Tracker.xlsx
 docs/.~lock.LocalizeSORTv2_Project_Tracker.xlsx#
 data
 CUT3R
+CLAUDE.md
 
 # Python
 __pycache__/
@@ -11,3 +12,6 @@ __pycache__/
 .pytest_cache/
 build/
 dist/
+
+# YOLO weights auto-downloaded by ultralytics on first run
+*.pt

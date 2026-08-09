@@ -10,6 +10,7 @@ readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
     "numpy",
+    "ultralytics>=8.3.0",
 ]
 
 [project.optional-dependencies]
@@ -17,3 +18,12 @@ dev = ["pytest"]
 
 [tool.setuptools.packages.find]
 include = ["localizesort*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# This machine's ROS2 setup leaks its site-packages onto PYTHONPATH for every
+# Python process, including venvs/conda envs. pytest then autoloads ROS's
+# `launch_testing` pytest plugin, which is incompatible with this pytest
+# version and crashes on collection. It's unrelated to this project, so
+# disable it explicitly rather than relying on plugin autoload being off.
+addopts = "-p no:launch_testing -p no:launch_ros"
