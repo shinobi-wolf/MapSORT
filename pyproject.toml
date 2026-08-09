@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "localizesort"
+version = "0.1.0"
+description = "Online multi-object tracking of stationary objects from monocular RGB video, with online feed-forward localization replacing offline SfM (RLoc)."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "numpy",
+]
+
+[project.optional-dependencies]
+dev = ["pytest"]
+
+[tool.setuptools.packages.find]
+include = ["localizesort*"]
