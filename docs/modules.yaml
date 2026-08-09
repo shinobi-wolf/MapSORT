@@ -1,0 +1,72 @@
+# LocalizeSORTv2 Module Definitions
+# Each module declares its input_data_schema, output_data_schema, and submodules.
+# Schema names reference arch/schema.yaml for field-level detail.
+
+LocalizeSORTv2:
+  description: >
+    Top-level online tracking pipeline. Consumes a monocular RGB frame I_t and
+    produces the running set of tracks T, by detecting objects, estimating
+    each detection's pose in the map frame, and associating detections into
+    identity-persistent tracks.
+  input_data_schema: RGBFrame
+  output_data_schema: Tracks
+  submodules:
+
+    Detector:
+      description: >
+        YOLO-based object detector. Produces per-frame bounding-box detections
+        D_t from the raw RGB frame I_t.
+      input_data_schema: RGBFrame
+      output_data_schema: Detections
+      submodules:
+
+    Localization:
+      description: >
+        Online, feed-forward localization module. Estimates each detection's
+        3D pose in the map frame, P_t, directly from the current RGB frame and
+        its detections — causally, using frames 1..t only, with no offline
+        per-scene optimization.
+      input_data_schema: LocalizationInput
+      output_data_schema: ObjectPoses
+      submodules:
+
+    Tracker:
+      description: >
+        Associates per-frame detections (via appearance and estimated map-frame
+        pose) against the existing track bank, updates matched tracks' state
+        estimates, and emits the running set of identity-persistent tracks T.
+        T is the cumulative trajectory view of the track bank as it evolves
+        across frames.
+      input_data_schema: TrackerInput
+      output_data_schema: Tracks
+      submodules:
+
+        AppearanceEncoder:
+          description: >
+            Encodes each detection's cropped image bbox D_t^i into an
+            appearance embedding A_t^i.
+          input_data_schema: Detections
+          output_data_schema: AppearanceFeatures
+          submodules:
+
+        TrackAssociation:
+          description: >
+            Matches current-frame detections against the existing track bank
+            (state gamma_t), using a joint cost over appearance features A_t
+            and estimated map-frame poses P_t. Produces frame-t assignments
+            (matched detection-track pairs, unmatched detections, unmatched
+            tracks) for the state update step.
+          input_data_schema: TrackAssociationInput
+          output_data_schema: Associations
+          submodules:
+
+        EKF:
+          description: >
+            Extended Kalman Filter. Updates each matched track's state estimate
+            from its associated detection's map-frame pose, initializes new
+            tracks from unmatched detections, and ages/prunes unmatched tracks.
+            Writes the updated track bank state gamma_{t+1}, which is read back
+            by TrackAssociation at frame t+1.
+          input_data_schema: Associations
+          output_data_schema: TrackBank
+          submodules:

@@ -1,0 +1,230 @@
+# LocalizeSORTv2 Data Schemas
+# Describes every named data contract that flows between modules.
+# Referenced by arch/modules.yaml.
+
+# ─────────────────────────────────────────────
+# INPUT SCHEMAS  (fed into the system)
+# ─────────────────────────────────────────────
+
+RGBFrame:
+  description: >
+    Single monocular RGB video frame I_t, the sole raw input to the pipeline
+    at time t. No depth, odometry, or other sensor modality is available.
+  fields:
+    - name: image
+      type: uint8[H, W, 3]
+      description: RGB image tensor for frame t.
+    - name: frame_index
+      type: int
+      description: Index t of this frame within the video sequence.
+
+# ─────────────────────────────────────────────
+# DETECTION SCHEMAS
+# ─────────────────────────────────────────────
+
+Detection:
+  description: >
+    Single detection d_t^i produced by the Detector for frame t.
+  fields:
+    - name: detection_id
+      type: int
+      description: Index i of this detection within frame t's detection set.
+    - name: bbox
+      type: float[4]
+      description: Bounding box of the detection in image coordinates (xyxy).
+    - name: crop
+      type: uint8[h, w, 3]
+      description: Image crop D_t^i of I_t within bbox, as consumed by the AppearanceEncoder and Localization module.
+    - name: confidence
+      type: float
+      description: Detector confidence score for this detection.
+    - name: class_id
+      type: int
+      description: Detected object class (e.g. produce/fruit category).
+
+Detections:
+  description: >
+    Full per-frame detection set D_t = [D_t^1, ..., D_t^{n_t}] emitted by the
+    Detector for frame t.
+  fields:
+    - name: frame_index
+      type: int
+      description: Index t of the frame these detections belong to.
+    - name: detections
+      type: Detection[n_t]
+      description: List of detections for frame t.
+
+# ─────────────────────────────────────────────
+# LOCALIZATION SCHEMAS
+# ─────────────────────────────────────────────
+
+ObjectPose:
+  description: >
+    Estimated map-frame pose P_t^i of a single detection d_t^i, produced
+    online by the Localization module directly from RGB.
+  fields:
+    - name: detection_id
+      type: int
+      description: Index i of the detection this pose corresponds to (matches Detection.detection_id for the same frame).
+    - name: position
+      type: float[3]
+      description: Estimated 3D position of the detected object in the map frame, p_t^i in R^3.
+    - name: covariance
+      type: float[3, 3]
+      description: Estimated uncertainty of the position estimate, propagated causally without access to future frames.
+
+ObjectPoses:
+  description: >
+    Full per-frame map-frame pose set P_t = [P_t^1, ..., P_t^{n_t}] emitted
+    by the Localization module for frame t, aligned by detection_id with Detections.
+  fields:
+    - name: frame_index
+      type: int
+      description: Index t of the frame these poses belong to.
+    - name: poses
+      type: ObjectPose[n_t]
+      description: List of per-detection map-frame poses for frame t.
+
+# ─────────────────────────────────────────────
+# COMPOSITE INPUT SCHEMAS  (module inputs with more than one source)
+# ─────────────────────────────────────────────
+
+LocalizationInput:
+  description: >
+    Joint input to the Localization module: the raw frame it estimates
+    geometry from, plus the detections it must produce a pose for.
+  fields:
+    - name: frame
+      type: RGBFrame
+      description: Current RGB frame I_t.
+    - name: detections
+      type: Detections
+      description: Current-frame detection set D_t.
+
+TrackerInput:
+  description: >
+    Joint input to the Tracker: the current-frame detections and their
+    estimated map-frame poses.
+  fields:
+    - name: detections
+      type: Detections
+      description: Current-frame detection set D_t.
+    - name: poses
+      type: ObjectPoses
+      description: Current-frame per-detection map-frame poses P_t.
+
+TrackAssociationInput:
+  description: >
+    Joint input to the TrackAssociation submodule: current-frame appearance
+    and pose cues, plus the existing track bank state to match against.
+  fields:
+    - name: appearance_features
+      type: AppearanceFeatures
+      description: Current-frame per-detection appearance embeddings A_t.
+    - name: poses
+      type: ObjectPoses
+      description: Current-frame per-detection map-frame poses P_t.
+    - name: track_bank
+      type: TrackBank
+      description: Track bank state gamma_t before this frame's update.
+
+# ─────────────────────────────────────────────
+# TRACKER SCHEMAS
+# ─────────────────────────────────────────────
+
+AppearanceFeature:
+  description: >
+    Appearance embedding A_t^i for a single detection, produced by the
+    AppearanceEncoder from its cropped image bbox D_t^i.
+  fields:
+    - name: detection_id
+      type: int
+      description: Index i of the detection this embedding corresponds to.
+    - name: embedding
+      type: float[d]
+      description: Appearance feature vector of dimension d.
+
+AppearanceFeatures:
+  description: >
+    Full per-frame appearance embedding set A_t = [A_t^1, ..., A_t^{n_t}]
+    emitted by the AppearanceEncoder for frame t.
+  fields:
+    - name: frame_index
+      type: int
+      description: Index t of the frame these embeddings belong to.
+    - name: features
+      type: AppearanceFeature[n_t]
+      description: List of per-detection appearance embeddings for frame t.
+
+Associations:
+  description: >
+    Result of TrackAssociation for frame t: the assignment between
+    current-frame detections and existing tracks, used by the EKF to update
+    track state.
+  fields:
+    - name: frame_index
+      type: int
+      description: Index t of the frame this assignment covers.
+    - name: matched
+      type: (int, int)[]
+      description: List of (detection_id, track_id) pairs matched at frame t.
+    - name: unmatched_detections
+      type: int[]
+      description: detection_ids with no matching track — candidates for new track initialization.
+    - name: unmatched_tracks
+      type: int[]
+      description: track_ids with no matching detection at frame t — candidates for aging/pruning.
+
+# ─────────────────────────────────────────────
+# STATE SCHEMAS  (persistent across frames)
+# ─────────────────────────────────────────────
+
+Track:
+  description: >
+    Single persistent track (identity) k maintained in the track bank.
+  fields:
+    - name: track_id
+      type: int
+      description: Persistent identity k assigned to this track.
+    - name: kalman_state
+      type: "{mean: float[3], covariance: float[3,3]}"
+      description: EKF state (mean map-frame position and covariance) for this track's stationary-object position estimate.
+    - name: appearance_state
+      type: float[d]
+      description: Running/aggregated appearance representation for this track, used as the appearance cue in future association.
+    - name: hits
+      type: int
+      description: Number of frames in which this track has been matched to a detection.
+    - name: time_since_update
+      type: int
+      description: Number of consecutive frames since this track was last matched — used for aging/pruning and for detecting revisit gaps.
+    - name: status
+      type: enum[tentative, confirmed, deleted]
+      description: Lifecycle state of the track under standard track-management logic.
+
+TrackBank:
+  description: >
+    Full track bank state gamma_t: all tracks maintained by the Tracker as of
+    frame t. Read by TrackAssociation to match against, and rewritten by the
+    EKF (as gamma_{t+1}) after each frame's update.
+  fields:
+    - name: frame_index
+      type: int
+      description: Index t of the frame this state reflects.
+    - name: tracks
+      type: Track[]
+      description: All tracks (tentative, confirmed, and recently deleted) currently held in the bank.
+
+# ─────────────────────────────────────────────
+# OUTPUT SCHEMAS  (produced by the system)
+# ─────────────────────────────────────────────
+
+Tracks:
+  description: >
+    Final pipeline output T = {tau_1, ..., tau_K}: the cumulative trajectory
+    of every track identity produced over the sequence so far, each trajectory
+    being the set of (frame_index, detection_id) pairs assigned to that identity.
+  fields:
+    - name: trajectories
+      type: "{track_id: int, assignments: (int,int)[]}[]"
+      description: One entry per track identity k, listing every (frame_index, detection_id) pair assigned to k up to the current frame.
