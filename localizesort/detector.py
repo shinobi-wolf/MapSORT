@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
+import numpy as np
 from ultralytics import YOLO
 
-from .schemas import Detection, Detections, RGBFrame
-
+from .schemas import Detection
 
 class Detector:
     """YOLO-based object detector (Ultralytics YOLOv8).
@@ -24,20 +24,18 @@ class Detector:
         self.conf = conf
         self.device = device
 
-    def __call__(self, frame: RGBFrame) -> Detections:
+    def __call__(self, frame: np.ndarray) -> list[Detection]:
+        # Ultralytics treats numpy input as BGR; the pipeline frames are RGB.
+        bgr = np.ascontiguousarray(frame[..., ::-1])
         [result] = self.model.predict(
-            frame.image, conf=self.conf, device=self.device, verbose=False
+            bgr, conf=self.conf, device=self.device, verbose=False
         )
 
-        detections = [
+        return [
             Detection(
-                detection_id=i,
                 bbox=box.xyxy[0].cpu().numpy(),
-                frame=frame,
                 confidence=float(box.conf[0]),
                 class_id=int(box.cls[0]),
             )
-            for i, box in enumerate(result.boxes)
+            for box in result.boxes
         ]
-
-        return Detections(frame_index=frame.frame_index, detections=detections)

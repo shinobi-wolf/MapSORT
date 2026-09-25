@@ -1,0 +1,36 @@
+# LocalizeSORTv2 pipeline configuration.
+# Sections map to the constructor arguments of each pipeline module.
+
+detector:
+  # Stock yolov8n is COCO-trained and detects nothing in the crop datasets;
+  # replace with weights fine-tuned on the target crop.
+  weights: yolov8n.pt
+  conf: 0.25
+  device: null  # null lets ultralytics pick; "cpu", "0", "cuda:0" to pin
+
+localization: {}  # stub — returns no poses until the CUT3R module lands
+
+tracker:
+  # -> boxmot StrongSortConfig
+  strongsort:
+    min_conf: 0.6
+    det_thresh: 0.3
+    max_age: 30
+    max_obs: 50
+    min_hits: 3
+    n_init: 3
+    iou_threshold: 0.3
+    asso_func: iou  # iou | giou | diou | ciou | hmiou | centroid
+    max_cos_dist: 0.4
+    max_iou_dist: 0.7
+    nn_budget: 100
+    mc_lambda: 0.98  # appearance weight in the appearance/motion cost blend
+    ema_alpha: 0.9  # previous-embedding weight in feature smoothing
+
+  # -> boxmot ReIDConfig
+  reid:
+    model: osnet-x0-25-msmt17
+    device: null
+    precision: null  # fp16 | fp32
+    batch_size: null
+    allow_download: true

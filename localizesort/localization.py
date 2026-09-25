@@ -3,8 +3,9 @@
 
 from __future__ import annotations
 
-from .schemas import LocalizationInput, ObjectPoses
+import numpy as np
 
+from .schemas import Detection, ObjectPose
 
 class Localization:
     """Online, feed-forward localization module.
@@ -17,5 +18,6 @@ class Localization:
     def __init__(self, *args, **kwargs) -> None:
         pass
 
-    def __call__(self, localization_input: LocalizationInput) -> ObjectPoses:
-        raise NotImplementedError
+    def __call__(self, frame_idx: int, frame: np.ndarray, detections: list[Detection]) -> list[ObjectPose]:
+        # Placeholder: StrongSORT doesn't consume poses, so emit none for now.
+        return []

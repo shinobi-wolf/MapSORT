@@ -8,8 +8,8 @@ LocalizeSORTv2:
     produces the running set of tracks T, by detecting objects, estimating
     each detection's pose in the map frame, and associating detections into
     identity-persistent tracks.
-  input_data_schema: RGBFrame
-  output_data_schema: Tracks
+  input_data_schema: [RGBFrame]
+  output_data_schema: [Track]
   submodules:
 
     Detector:
@@ -17,7 +17,7 @@ LocalizeSORTv2:
         YOLO-based object detector. Produces per-frame bounding-box detections
         D_t from the raw RGB frame I_t.
       input_data_schema: RGBFrame
-      output_data_schema: Detections
+      output_data_schema: [Detection]
       submodules:
 
     Localization:

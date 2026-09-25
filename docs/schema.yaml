@@ -6,6 +6,17 @@
 # INPUT SCHEMAS  (fed into the system)
 # ─────────────────────────────────────────────
 
+RGBVideo:
+  description: > 
+    Video input
+  fields:
+    - name: num_frame
+      type: uint8
+      description: Number of frames
+    - name: frames
+      type: RGBFrame[num_frame]
+      description: Frame sequence
+
 RGBFrame:
   description: >
     Single monocular RGB video frame I_t, the sole raw input to the pipeline
@@ -224,7 +235,4 @@ Tracks:
     Final pipeline output T = {tau_1, ..., tau_K}: the cumulative trajectory
     of every track identity produced over the sequence so far, each trajectory
     being the set of (frame_index, detection_id) pairs assigned to that identity.
-  fields:
-    - name: trajectories
-      type: "{track_id: int, assignments: (int,int)[]}[]"
-      description: One entry per track identity k, listing every (frame_index, detection_id) pair assigned to k up to the current frame.
+  
