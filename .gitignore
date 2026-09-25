@@ -3,6 +3,7 @@ docs/.~lock.LocalizeSORTv2_Project_Tracker.xlsx#
 data
 CUT3R
 CLAUDE.md
+boxmot
 
 # Python
 __pycache__/
@@ -12,6 +13,23 @@ __pycache__/
 .pytest_cache/
 build/
 dist/
+.ipynb_checkpoints/
 
-# YOLO weights auto-downloaded by ultralytics on first run
+# Model weights, auto-downloaded on first run
+models/
 *.pt
+*.pth
+*.onnx
+*.engine
+*.torchscript
+*.tflite
+
+# Experiment outputs
+lab/outputs/
+runs/
+outputs/
+*.mp4
+*.avi
+*.mkv
+*.npy
+*.npz
