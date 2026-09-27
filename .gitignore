@@ -1,6 +1,10 @@
 docs/LocalizeSORTv2_Project_Tracker.xlsx
 docs/.~lock.LocalizeSORTv2_Project_Tracker.xlsx#
-data
+*.bak
+# Dataset root: symlinks into machine-specific download locations and derived
+# views built from them. Only the layout doc is tracked; see data/README.md.
+data/*
+!data/README.md
 CUT3R
 CLAUDE.md
 boxmot
@@ -26,8 +30,11 @@ models/
 
 # Experiment outputs
 lab/outputs/
-runs/
 outputs/
+
+# Run directories: manifest.json and metrics.json are small and tracked, so a
+# result stays reproducible from its commit. The heavy artifacts are not.
+runs/*/artifacts/
 *.mp4
 *.avi
 *.mkv
