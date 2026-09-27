@@ -1,0 +1,11 @@
+# What exists under the data root; layout is in data/README.md.
+# mot/ holds every sequence in `splits`; the other lists name the sequences that
+# have dets/<seq>.txt, pose/<seq>.txt and recon/<seq>/.
+
+lettucemots:
+  splits:
+    test: ["0003", "0007", "0011"]
+    train: ["0000", "0001", "0002", "0004", "0005", "0006", "0008", "0009", "0010"]
+  dets: ["0000", "0001", "0002", "0003", "0004", "0005", "0006", "0007", "0008", "0009", "0010", "0011"]
+  pose: []
+  recon: ["0011"]
