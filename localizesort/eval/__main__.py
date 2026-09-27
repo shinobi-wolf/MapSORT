@@ -6,7 +6,7 @@
     # score a run's own artifacts, writing metrics.json back into it
     python -m localizesort.eval --run runs/20260926-120000_tracker_baseline
 
-Sequence names come from config/datasets.yaml, restricted to whichever have a
+Sequences come from the split in config/datasets.yaml, restricted to those with a
 matching tracker file.
 """
 
@@ -43,7 +43,6 @@ def main() -> None:
         type=Path,
         help="where to write metrics.json (default: the run dir, or nowhere)",
     )
-    ap.add_argument("--tag", default="eval", help="tag for a newly created run dir")
     args = ap.parse_args()
 
     tracker_dir = args.run / "artifacts" if args.run else args.tracker_dir

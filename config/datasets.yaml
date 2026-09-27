@@ -1,48 +1,11 @@
-# Dataset registry. Paths are relative to the data root, which is
-# $LOCALIZESORT_DATA if set, else ./data.
-#
-# Every dataset follows the same layout, so eval code never branches on which
-# dataset it is running against:
-#
-#   <dataset>/raw            symlink to the original download (never written to)
-#   <dataset>/mot/<split>/<seq>/{img1,gt/gt.txt,seqinfo.ini}   canonical MOT view
-#   <dataset>/recon/<seq>/   offline SfM reconstruction, RLoc-style pseudo-GT
-#
-# See data/README.md for how to create the raw symlink on a new machine.
+# What exists under the data root; layout is in data/README.md.
+# mot/ holds every sequence in `splits`; the other lists name the sequences that
+# have dets/<seq>.txt, pose/<seq>.txt and recon/<seq>/.
 
 lettucemots:
-  root: lettucemots
-  raw_target: /home/shinobi-owl/IISc/data/LettuceMOTS  # what raw/ should point at
-
-  # Subpaths of raw/ that are genuine source data. The rest of that tree is the
-  # upstream code repo and derived outputs (viz, eval_results) -- do not read them.
-  raw_sources:
-    images: raw/images/{seq}
-    labels: raw/labels/{seq}          # YOLO detection labels, upstream train seqs only
-    instances: raw/instances/{split}/{seq}.txt  # MOTS masks: the actual ground truth
-
-  mot: mot/{split}/{seq}
-  recon: recon/{seq}
-
-  # Mirrors the upstream train/test division.
-  #
-  # test  -- the held-out split, and what LocalizeSORT reported numbers on. The
-  #          long sequences (223-245 frames), so they carry most of the revisit
-  #          events and drift this project is about. Headline eval set.
-  # train -- upstream's training sequences (45-117 frames). We never train on
-  #          them (the tracker takes GT detections), so they serve as a
-  #          development set: tuning things like the WC gate threshold that
-  #          must not be fitted on the test set. Note that any detector
-  #          fine-tuned on LettuceMOTS has seen these, so detector-in-the-loop
-  #          numbers on them are contaminated.
   splits:
     test: ["0003", "0007", "0011"]
-    train:
-      ["0000", "0001", "0002", "0004", "0005", "0006", "0008", "0009", "0010"]
-
-  # Sequences with an offline SfM reconstruction, i.e. the only ones where the
-  # localization sub-task has pseudo-ground-truth.
-  recon_seqs: ["0011"]
-
-  image_ext: .png
-  frame_base: 1  # MOT gt.txt and img1 filenames are 1-based
+    train: ["0000", "0001", "0002", "0004", "0005", "0006", "0008", "0009", "0010"]
+  dets: ["0000", "0001", "0002", "0003", "0004", "0005", "0006", "0007", "0008", "0009", "0010", "0011"]
+  pose: []
+  recon: ["0011"]

@@ -1,15 +1,4 @@
-"""Dataset access, driven by config/datasets.yaml.
-
-Every dataset is exposed through the same canonical MOT layout, so nothing
-downstream branches on which dataset it is running against:
-
-    <data_root>/<dataset>/mot/<split>/<seq>/{img1,gt/gt.txt,seqinfo.ini}
-    <data_root>/<dataset>/recon/<seq>/
-
-The data root is `$LOCALIZESORT_DATA` if set, else the repo's `data/`. See
-data/README.md for how the tree is built.
-
-Typical use:
+"""Dataset access, driven by config/datasets.yaml. Layout: data/README.md.
 
     seq = sequence("lettucemots", "test", "0011")
     frames = seq.load_frames(limit=60)
@@ -34,7 +23,6 @@ DEFAULT_REGISTRY = REPO_ROOT / "config" / "datasets.yaml"
 
 
 def data_root() -> Path:
-    """The dataset root: `$LOCALIZESORT_DATA`, else the repo's `data/`."""
     env = os.environ.get("LOCALIZESORT_DATA")
     return Path(env).expanduser() if env else REPO_ROOT / "data"
 
@@ -46,13 +34,13 @@ def registry(path: Path | None = None) -> dict:
 
 @dataclass(frozen=True)
 class Sequence:
-    """One sequence's canonical MOT directory, plus its optional reconstruction."""
-
     dataset: str
     split: str
     name: str
-    path: Path  # the mot/<split>/<seq> directory
-    recon_path: Path | None  # offline SfM reconstruction, when one exists
+    path: Path  # mot/<split>/<seq>
+    dets_path: Path | None  # dets/<seq>.txt
+    pose_path: Path | None  # pose/<seq>.txt
+    recon_path: Path | None  # recon/<seq>/
 
     @property
     def image_dir(self) -> Path:
@@ -64,7 +52,7 @@ class Sequence:
 
     @property
     def info(self) -> dict[str, str]:
-        """Parsed seqinfo.ini `[Sequence]` section."""
+        """Parsed seqinfo.ini `[Sequence]`."""
         cfg = configparser.ConfigParser()
         cfg.optionxform = str
         cfg.read(self.path / "seqinfo.ini")
@@ -75,16 +63,12 @@ class Sequence:
         return int(self.info["seqLength"])
 
     def image_paths(self) -> list[Path]:
-        """Frame paths in order. Filenames are 1-based; index 0 is frame 1."""
+        """Frame paths in order; index 0 is frame 1."""
         return sorted(self.image_dir.glob(f"*{self.info['imExt']}"))
 
     def iter_frames(self, limit: int | None = None):
-        """Yield frames as RGB uint8 arrays, which is what the pipeline expects.
-
-        A 245-frame 810x1080 sequence is ~640 MB decoded, so anything running the
-        whole pipeline should stream rather than use `load_frames`.
-        """
-        import cv2  # local: only needed when frames are actually loaded
+        """Yield RGB uint8 frames. Stream in runs; a full sequence is ~640 MB."""
+        import cv2
 
         for path in self.image_paths()[:limit]:
             bgr = cv2.imread(str(path))
@@ -93,22 +77,43 @@ class Sequence:
             yield cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB)
 
     def load_frames(self, limit: int | None = None) -> list[np.ndarray]:
-        """All frames at once. Convenient in notebooks; use `iter_frames` in runs."""
+        """All frames at once, for notebooks."""
         return list(self.iter_frames(limit))
 
     def gt_rows(self) -> np.ndarray:
-        """Raw `gt.txt` as an (N, 9) array, in MOT's own conventions."""
+        """Raw `gt.txt` as an (N, 9) array."""
         return np.atleast_2d(np.loadtxt(self.gt_path, delimiter=","))
+
+    def stored_detections(self, limit: int | None = None) -> list[list[Detection]]:
+        """`dets/<seq>.txt` as `Detection`s, indexed by 0-based frame."""
+        if self.dets_path is None:
+            raise FileNotFoundError(
+                f"{self.dataset}/{self.name} has no stored detections; "
+                f"list it under `dets` in config/datasets.yaml and build them "
+                f"(see data/README.md)"
+            )
+        num = self.num_frames if limit is None else min(limit, self.num_frames)
+        dets: list[list[Detection]] = [[] for _ in range(num)]
+
+        for frame_no, _id, x, y, w, h, conf, class_id in np.atleast_2d(
+            np.loadtxt(self.dets_path, delimiter=",")
+        ):
+            idx = int(frame_no) - 1
+            if idx >= num:
+                continue
+            dets[idx].append(
+                Detection(
+                    bbox=np.array([x, y, x + w, y + h], dtype=float),
+                    confidence=float(conf),
+                    class_id=int(class_id),
+                )
+            )
+        return dets
 
     def gt_detections(
         self, limit: int | None = None
     ) -> tuple[list[list[Detection]], list[list[int]]]:
-        """Ground truth as pipeline `Detection`s, plus the matching track ids.
-
-        Both lists are indexed by 0-based frame index, so they line up with
-        `load_frames`. `gt.txt` frames are 1-based and its boxes are top-left
-        `xywh`, while `Detection.bbox` is `xyxy`.
-        """
+        """GT as `Detection`s plus track ids, indexed by 0-based frame."""
         num = self.num_frames if limit is None else min(limit, self.num_frames)
         dets: list[list[Detection]] = [[] for _ in range(num)]
         ids: list[list[int]] = [[] for _ in range(num)]
@@ -141,22 +146,28 @@ def splits(dataset: str) -> dict[str, list[str]]:
 
 def sequence(dataset: str, split: str, name: str) -> Sequence:
     spec = dataset_spec(dataset)
-    root = data_root() / spec["root"]
+    if name not in spec["splits"].get(split, []):
+        raise KeyError(f"{dataset} has no sequence {name!r} in split {split!r}")
+    root = data_root() / dataset
 
-    path = root / spec["mot"].format(split=split, seq=name)
+    path = root / "mot" / split / name
     if not path.is_dir():
         raise FileNotFoundError(
             f"{dataset}/{split}/{name} is missing at {path}. "
             "Build the MOT view first -- see data/README.md."
         )
 
-    recon = root / spec["recon"].format(seq=name)
+    def listed(kind: str, rel: str) -> Path | None:
+        return root / kind / rel if name in spec.get(kind, []) else None
+
     return Sequence(
         dataset=dataset,
         split=split,
         name=name,
         path=path,
-        recon_path=recon if recon.exists() else None,
+        dets_path=listed("dets", f"{name}.txt"),
+        pose_path=listed("pose", f"{name}.txt"),
+        recon_path=listed("recon", name),
     )
 
 

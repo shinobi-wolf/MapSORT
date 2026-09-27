@@ -1,41 +1,15 @@
-# Frozen evaluation protocol (tracker task T06).
-#
-# This file is the protocol, not an invocation: it says how results are scored,
-# never which ones. Dataset, split and sequence selection are CLI flags, so that
-# changing what is measured is a visible commit here rather than a flag someone
-# passes differently next week.
-#
-# See docs/problem.md for what each metric is for.
+# Frozen evaluation protocol: how results are scored, never which ones.
 
 tracking:
-  # CLEAR/Identity match IoU thresholds. MOTA at 0.25 is what the LocalizeSORT
-  # paper reports; 0.5 is the MOTChallenge default and the usual comparison
-  # point. Fields at `primary_threshold` keep their plain names, others are
-  # suffixed -- MOTA, MOTA@0.25.
-  #
-  # HOTA takes no threshold: it integrates over alphas 0.05..0.95, and HOTA(0)
-  # is the alpha-to-zero limit.
+  # IoU thresholds for CLEAR/Identity; primary keeps plain names, others are
+  # suffixed (MOTA, MOTA@0.25). HOTA takes no threshold.
   thresholds: [0.5, 0.25]
   primary_threshold: 0.5
-
-  # MOTChallenge preprocessing drops ground truth marked as distractor classes
-  # or below a visibility cutoff. Our single-class crop data has neither, so
-  # enabling it could only filter rows silently.
+  # Single-class crop data: preprocessing would only filter rows silently.
   do_preproc: false
 
-# Revisit-restricted identity metrics: the measurement the project's claim rests
-# on. See localizesort/eval/revisit.py.
+# Revisit-restricted identity metrics (localizesort/eval/revisit.py).
 revisit:
-  # Frames an identity must be absent before its return counts as a revisit.
-  min_gap: 10
-
-  # Frames the tracker is allowed to re-acquire a returning object. Not
-  # optional: StrongSORT confirms a track only after n_init=3 hits, so scoring
-  # the reappearance frame alone reports every revisit as unmatched and hides
-  # whether the identity was preserved.
-  grace: 5
-
-  # Frames after each reappearance included in the `restricted` metrics. Those
-  # measure local identity consistency during revisit periods, not persistence
-  # across the gap -- the event counts measure that.
-  window: 30
+  min_gap: 10  # frames absent before a return counts as a revisit
+  grace: 5  # frames allowed to re-acquire; StrongSORT needs n_init=3 hits to confirm
+  window: 30  # frames after each reappearance in the `restricted` metrics

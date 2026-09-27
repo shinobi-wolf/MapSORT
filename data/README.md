@@ -4,36 +4,36 @@ This directory is the project's dataset root. Everything in it is git-ignored
 except this file — the contents are symlinks into machine-specific download
 locations, plus derived views built from them.
 
-The registry of datasets, splits and path templates is
-[config/datasets.yaml](../config/datasets.yaml). Code resolves the root from
+[config/datasets.yaml](../config/datasets.yaml) lists each dataset's splits and
+which sequences have dets, pose and recon. Code resolves the root from
 `$LOCALIZESORT_DATA`, falling back to `./data`.
 
 ## Layout
 
-Every dataset has the same shape, so eval code never branches on which dataset
-it is running against:
+Every dataset has exactly these directories:
 
 ```
 data/<dataset>/
   raw                      symlink -> the original download; never written to
   mot/<split>/<seq>/       canonical MOT view: img1/, gt/gt.txt, seqinfo.ini
+  dets/<seq>.txt           detections, MOT det format: frame,-1,x,y,w,h,conf,class
+  pose/<seq>.txt           object world coordinates, one row per detection
   recon/<seq>/             offline SfM reconstruction (RLoc-style pseudo-GT)
 ```
 
 `raw` is a pointer, so the download stays wherever it already lives and is
-shared with other projects untouched. `mot/` and `recon/` are ours: currently
-symlinks into `raw`, later real directories once we build our own conversions.
+shared with other projects untouched. The rest are ours. `dets/`, `pose/` and
+`recon/` are flat by sequence; the split comes from `splits` in the yaml.
 
 Derived outputs — predictions, visualisations, point clouds — do **not** belong
 here. They go in `runs/<run_id>/artifacts/`.
 
 ## Setting up on a new machine
 
-Create the `raw` symlink for each dataset, pointing at `raw_target` from
-`config/datasets.yaml`:
+Create the `raw` symlink for each dataset:
 
 ```bash
-mkdir -p data/lettucemots
+mkdir -p data/lettucemots/{dets,pose,recon}
 ln -s /path/to/LettuceMOTS data/lettucemots/raw
 ```
 
@@ -41,8 +41,8 @@ Then build the derived views:
 
 ```bash
 python scripts/data/lettucemots_to_mot.py    # writes mot/{train,test}/<seq>/
-mkdir -p data/lettucemots/recon
 ln -s ../raw/colmap/0011 data/lettucemots/recon/0011
+python scripts/data/gt_to_dets.py                # writes dets/<seq>.txt from mot GT
 ```
 
 The `recon/` symlink is relative, so the tree survives being moved as long as

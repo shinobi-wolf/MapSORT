@@ -1,0 +1,15 @@
+# Defaults for `localizesort`; any CLI flag overrides its key. Paths are
+# relative to the repo root.
+dataset: lettucemots
+split: test
+seqs: null  # null = the whole split
+detections: stored  # stored | live
+limit: null  # frames per sequence; null = all
+config: config/localizesort.yaml
+protocol: config/eval.yaml
+task_id: null
+eval: false
+save: true  # false = --no-save
+viz: false
+viz_compare: false
+viz_save: null  # mp4 path

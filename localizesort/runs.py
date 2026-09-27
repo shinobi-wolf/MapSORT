@@ -1,6 +1,6 @@
 """Run directories: one per experiment, recording what was run and what it scored.
 
-    runs/<date>_<module>_<tag>/
+    runs/<date>_<module>/
       manifest.json    what was run: git state, config, sequences, timing
       metrics.json     what it scored; free-form, since each module reports
                        different things
@@ -48,30 +48,20 @@ def git_state() -> dict[str, Any]:
 
 def create(
     module: str,
-    tag: str,
     *,
     task_id: str | None = None,
-    hypothesis: str | None = None,
-    baseline_run: str | None = None,
     config: dict[str, Any] | None = None,
     runs_dir: Path = RUNS_DIR,
 ) -> Path:
-    """Make a run directory and write its manifest. Returns the directory.
-
-    `task_id` links the run to the project tracker (e.g. "T06"); `baseline_run`
-    names the run this one is meant to be compared against.
-    """
+    """Make a run directory and write its manifest. `task_id` is e.g. "T06"."""
     stamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
-    run_dir = runs_dir / f"{stamp}_{module}_{tag}"
+    run_dir = runs_dir / f"{stamp}_{module}"
     (run_dir / "artifacts").mkdir(parents=True, exist_ok=True)
 
     manifest = {
         "run_id": run_dir.name,
         "module": module,
-        "tag": tag,
         "task_id": task_id,
-        "hypothesis": hypothesis,
-        "baseline_run": baseline_run,
         "created": datetime.now(timezone.utc).isoformat(),
         "git": git_state(),
         "config": config or {},
