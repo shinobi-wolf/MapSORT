@@ -1,10 +1,10 @@
 """Score MOT tracker files and write the result into a run directory.
 
     # score a directory of <seq>.txt files
-    python -m localizesort.eval --tracker-dir path/to/results --split test
+    python -m mapsort.eval --tracker-dir path/to/results --split test
 
     # score a run's own artifacts, writing metrics.json back into it
-    python -m localizesort.eval --run runs/20260926-120000_tracker_baseline
+    python -m mapsort.eval --run runs/20260926-120000_tracker_baseline
 
 Sequences come from the split in config/datasets.yaml, restricted to those with a
 matching tracker file.

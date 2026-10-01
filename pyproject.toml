@@ -3,9 +3,9 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "localizesort"
+name = "mapsort"
 version = "0.1.0"
-description = "Online multi-object tracking of stationary objects from monocular RGB video, with online feed-forward localization replacing offline SfM (RLoc)."
+description = "Online multi-object tracking of stationary objects from monocular RGB video, with online feed-forward mapping replacing offline SfM (RLoc)."
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
@@ -21,13 +21,13 @@ dependencies = [
 
 [project.scripts]
 # The run workflow is the entry point; `--eval` scores the result in place.
-localizesort = "localizesort.run:main"
+mapsort = "mapsort.run:main"
 
 [project.optional-dependencies]
 dev = ["pytest"]
 
 [tool.setuptools.packages.find]
-include = ["localizesort*"]
+include = ["mapsort*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

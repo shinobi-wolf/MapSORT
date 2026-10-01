@@ -69,7 +69,7 @@ def _flatten(metric: Any, res: dict[str, Any], suffix: str = "") -> dict[str, An
 
     Array fields are per-alpha; the headline HOTA number is their mean, which is
     what the HOTA paper reports. Rates are scaled to percentages, matching how
-    the LocalizeSORT paper and boxmot both report them.
+    the MapSORT paper and boxmot both report them.
     """
     out: dict[str, Any] = {}
     for field in getattr(metric, "float_array_fields", []):
@@ -108,7 +108,7 @@ def preprocess(
     sequences: SequenceABC[Sequence],
     tracker_files: dict[str, Path],
     *,
-    tracker_name: str = "localizesort",
+    tracker_name: str = "mapsort",
     gt_files: dict[str, Path] | None = None,
     do_preproc: bool = False,
 ) -> dict[str, dict[str, Any]]:
@@ -130,7 +130,7 @@ def preprocess(
     if missing:
         raise ValueError(f"no tracker file for sequences: {missing}")
 
-    with tempfile.TemporaryDirectory(prefix="localizesort-eval-") as tmp:
+    with tempfile.TemporaryDirectory(prefix="mapsort-eval-") as tmp:
         stage_dir = Path(tmp)
         gt_root, tracker_root = _stage(
             sequences, tracker_files, stage_dir, tracker_name, gt_files
@@ -165,7 +165,7 @@ def evaluate(
     tracker_files: dict[str, Path],
     *,
     thresholds: SequenceABC[float] = (0.5, 0.25),
-    tracker_name: str = "localizesort",
+    tracker_name: str = "mapsort",
     gt_files: dict[str, Path] | None = None,
     do_preproc: bool = False,
 ) -> dict[str, Any]:

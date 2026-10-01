@@ -20,14 +20,15 @@ class Detection:
     class_id: int
 
 # ─────────────────────────────────────────────
-# POSE SCHEMAS
+# LANDMARK SCHEMAS
 # ─────────────────────────────────────────────
 @dataclass
-class ObjectPose:
-    """Estimated map-frame pose P_t^i of a single detection d_t^i."""
+class LandmarkObservation:
+    """One view's estimate of a detection's map-frame landmark position."""
 
     position: np.ndarray  # float[3], p_t^i in R^3
-    covariance: np.ndarray  # float[3, 3]
+    covariance: np.ndarray  # float[3, 3], uncertainty about the centre; fusable
+    extent: np.ndarray  # float[3, 3], the object's physical spread; not fusable
 
 # ─────────────────────────────────────────────
 # TRACKER SCHEMAS

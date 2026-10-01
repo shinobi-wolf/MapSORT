@@ -5,8 +5,8 @@ except this file — the contents are symlinks into machine-specific download
 locations, plus derived views built from them.
 
 [config/datasets.yaml](../config/datasets.yaml) lists each dataset's splits and
-which sequences have dets, pose and recon. Code resolves the root from
-`$LOCALIZESORT_DATA`, falling back to `./data`.
+which sequences have dets, landmarks and recon. Code resolves the root from
+`$MAPSORT_DATA`, falling back to `./data`.
 
 ## Layout
 
@@ -17,12 +17,49 @@ data/<dataset>/
   raw                      symlink -> the original download; never written to
   mot/<split>/<seq>/       canonical MOT view: img1/, gt/gt.txt, seqinfo.ini
   dets/<seq>.txt           detections, MOT det format: frame,-1,x,y,w,h,conf,class
-  pose/<seq>.txt           object world coordinates, one row per detection
+  landmarks/<seq>/<backend>.npz  per-detection landmark observations
   recon/<seq>/             offline SfM reconstruction (RLoc-style pseudo-GT)
 ```
 
+`landmarks/` is per sequence and then per mapping backend — `sfm.npz` for the
+offline COLMAP baseline, later `cut3r.npz` for the online one — so the two are
+directly comparable on the same detections.
+
+### Landmark format
+
+A landmark observation is a **Gaussian over the object's position in the map
+frame**, not a single point. Each `.npz` holds parallel arrays, one row per line
+of `dets/<seq>.txt`, **in that order** — so row `i` is that file's line `i`, and
+alignment is a length check rather than a key lookup:
+
+| key | shape | what |
+|---|---|---|
+| `has_landmark` | `bool[N]` | false where the detection yielded no usable point |
+| `position` | `f32[N,3]` | the Gaussian's mean; `nan` where absent |
+| `covariance` | `f32[N,3,3]` | uncertainty **about the centre** — shrinks with more points |
+| `extent` | `f32[N,3,3]` | the object's **physical spread** — does not shrink |
+| `frame`, `det_idx` | `i32[N]` | 1-based frame, 0-based index within it |
+| `n_inside`, `n_kept` | `i32[N]` | keypoints in the bbox, and after depth filtering |
+
+The depth filter drops points more than 3 MADs from the median camera-frame
+depth — ~8% on 0011, of which 97% are *nearer* than the object body (raised leaf
+tips, triangulation noise) rather than background behind it, since the
+GT-derived boxes are tight enough to enclose little soil. It matters mainly for
+`extent`, which is a sample covariance and so sensitive to outliers; the median
+behind `position` is robust either way.
+
+`covariance` and `extent` are deliberately separate and differ by roughly 16x on
+0011 (centre sd ~0.025 against extent sd ~0.39). Conflating them is the easy
+mistake: fusing *extent* across observations would claim sub-plant precision,
+because only centre uncertainty shrinks as `extent / n_kept`.
+
+Detections that enclose no usable point carry `has_landmark = False` rather than
+a sentinel coordinate — load-bearing, since those degrade to appearance-only
+association downstream. `position` is `nan` there, never zero, which is itself a
+plausible coordinate.
+
 `raw` is a pointer, so the download stays wherever it already lives and is
-shared with other projects untouched. The rest are ours. `dets/`, `pose/` and
+shared with other projects untouched. The rest are ours. `dets/`, `landmarks/` and
 `recon/` are flat by sequence; the split comes from `splits` in the yaml.
 
 Derived outputs — predictions, visualisations, point clouds — do **not** belong
@@ -33,7 +70,7 @@ here. They go in `runs/<run_id>/artifacts/`.
 Create the `raw` symlink for each dataset:
 
 ```bash
-mkdir -p data/lettucemots/{dets,pose,recon}
+mkdir -p data/lettucemots/{dets,landmarks,recon}
 ln -s /path/to/LettuceMOTS data/lettucemots/raw
 ```
 
@@ -43,6 +80,7 @@ Then build the derived views:
 python scripts/data/lettucemots_to_mot.py    # writes mot/{train,test}/<seq>/
 ln -s ../raw/colmap/0011 data/lettucemots/recon/0011
 python scripts/data/gt_to_dets.py                # writes dets/<seq>.txt from mot GT
+python scripts/landmarks/sfm_mapping.py --seq 0011  # writes landmarks/<seq>/sfm.npz from recon + dets
 ```
 
 The `recon/` symlink is relative, so the tree survives being moved as long as
@@ -76,14 +114,18 @@ the three sequences converted upstream, which `--verify` checks.
 - **Splits.** `mot/test/` holds the upstream held-out sequences — 0003, 0007,
   0011, the long ones at 223–245 frames, and what LocalizeSORT reported numbers
   on. That is the headline eval set. `mot/train/` holds the other nine (45–117
-  frames); we never train on them, so they serve as a development set for tuning
-  things like the WC gate threshold that must not be fitted on the test set.
+  frames); we never train on them, so they serve as a development set for any
+  threshold that must not be fitted on the test set.
 - **GT format** (generated): `frame, track_id, x, y, w, h, conf, class,
   visibility`, 1-based frames, top-left `xywh`. `Detection.bbox` is `xyxy`, so
   convert.
 - **Reconstruction:** only 0011 has one (COLMAP, under `raw/colmap/0011`,
-  exposed as `recon/0011`), so the localization sub-task is limited to that one
-  sequence regardless of how many have tracking GT.
+  exposed as `recon/0011`), so the mapping sub-task is limited to that one
+  sequence regardless of how many have tracking GT. `landmarks/0011/sfm.npz`
+  covers 3032/3073 detections over all 223 registered frames, with a median of
+  240 keypoints behind each landmark; the remaining 41 enclose no triangulated
+  keypoint. Note the COLMAP scale is arbitrary, so distances in this file are in
+  reconstruction units, not metres.
 - **Detector weights:** stock `yolov8n.pt` is COCO-trained and detects no
   lettuce. Use GT detections until crop-specific weights exist. Any detector
   fine-tuned on LettuceMOTS has seen `mot/train/`, so detector-in-the-loop

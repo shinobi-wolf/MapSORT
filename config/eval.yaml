@@ -8,7 +8,7 @@ tracking:
   # Single-class crop data: preprocessing would only filter rows silently.
   do_preproc: false
 
-# Revisit-restricted identity metrics (localizesort/eval/revisit.py).
+# Revisit-restricted identity metrics (mapsort/eval/revisit.py).
 revisit:
   min_gap: 10  # frames absent before a return counts as a revisit
   grace: 5  # frames allowed to re-acquire; StrongSORT needs n_init=3 hits to confirm

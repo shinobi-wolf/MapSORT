@@ -26,7 +26,7 @@ from .schemas import Detection  # noqa: E402
 
 FONT = cv2.FONT_HERSHEY_SIMPLEX
 
-# Matching the sizing of LocalizeSORT's own comparison figures, so overlays from
+# Matching the sizing of MapSORT's own comparison figures, so overlays from
 # the two projects can be read side by side.
 FONT_SCALE = 1.0
 BOX_THICKNESS = 3
@@ -121,7 +121,7 @@ def draw_tracks(
     `colour_by` picks what colour means:
 
     "match"  black where the prediction corresponds to a ground-truth object,
-             red where it does not -- the LocalizeSORT comparison-figure look.
+             red where it does not -- the MapSORT comparison-figure look.
              Needs `gt_detections`; falls back to "id" without them.
     "id"     a stable colour per track id, so an ID switch shows up as a box
              changing colour.
@@ -205,7 +205,7 @@ class Window:
     one frame.
     """
 
-    def __init__(self, title: str = "localizesort", height: int = 1000) -> None:
+    def __init__(self, title: str = "mapsort", height: int = 1000) -> None:
         self.title = title
         self.height = height
         self.paused = False
@@ -220,8 +220,8 @@ class Window:
         error, and OpenCV built headless raises only when first asked to draw.
         """
         try:
-            cv2.namedWindow("__localizesort_probe__")
-            cv2.destroyWindow("__localizesort_probe__")
+            cv2.namedWindow("__mapsort_probe__")
+            cv2.destroyWindow("__mapsort_probe__")
             cv2.waitKey(1)
             return True, ""
         except cv2.error as exc:
