@@ -184,7 +184,7 @@ def evaluate_revisits(
     min_gap: int = DEFAULT_MIN_GAP,
     grace: int = DEFAULT_GRACE,
     window: int = DEFAULT_WINDOW,
-    tracker_name: str = "localizesort",
+    tracker_name: str = "mapsort",
     gt_files: dict[str, Path] | None = None,
     do_preproc: bool = False,
 ) -> dict[str, Any]:
@@ -234,7 +234,7 @@ def evaluate_revisits(
 
     restricted: dict[str, Any] | None = None
     if any(windows.values()):
-        with tempfile.TemporaryDirectory(prefix="localizesort-revisit-") as tmp:
+        with tempfile.TemporaryDirectory(prefix="mapsort-revisit-") as tmp:
             stage = Path(tmp)
             gt_subset, tracker_subset = {}, {}
             for seq in sequences:

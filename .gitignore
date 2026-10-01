@@ -1,5 +1,5 @@
-docs/LocalizeSORTv2_Project_Tracker.xlsx
-docs/.~lock.LocalizeSORTv2_Project_Tracker.xlsx#
+docs/*_Project_Tracker.xlsx
+docs/.~lock.*_Project_Tracker.xlsx#
 *.bak
 # Dataset root: symlinks into machine-specific download locations and derived
 # views built from them. Only the layout doc is tracked; see data/README.md.
@@ -40,3 +40,5 @@ runs/*/artifacts/
 *.mkv
 *.npy
 *.npz
+
+tmp

@@ -1,4 +1,4 @@
-# LocalizeSORTv2 pipeline configuration.
+# MapSORT pipeline configuration.
 # Sections map to the constructor arguments of each pipeline module.
 
 detector:
@@ -8,7 +8,7 @@ detector:
   conf: 0.25
   device: null  # null lets ultralytics pick; "cpu", "0", "cuda:0" to pin
 
-localization: {}  # stub — returns no poses until the CUT3R module lands
+mapping: {}  # stub — returns no landmarks until the CUT3R module lands
 
 tracker:
   # -> boxmot StrongSortConfig

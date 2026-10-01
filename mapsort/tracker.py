@@ -7,12 +7,12 @@ from boxmot.reid.specs import ReIDConfig
 from boxmot.trackers.strongsort.config import StrongSortConfig
 from boxmot.trackers.strongsort.tracker import StrongSort
 
-from .schemas import Detection, ObjectPose, Track
+from .schemas import Detection, LandmarkObservation, Track
 
 
 class Tracker:
     """Associates per-frame detections (via appearance and estimated
-    map-frame pose) against the existing track bank, updates matched tracks'
+    map-frame landmark) against the existing track bank, updates matched tracks'
     state estimates, and emits the running set of identity-persistent tracks
     T.
 
@@ -36,10 +36,10 @@ class Tracker:
         frame_idx: int,
         frame: np.ndarray,
         detections: list[Detection],
-        poses: list[ObjectPose],
+        landmarks: list[LandmarkObservation | None],
     ) -> Track:
-        # poses are unused: StrongSORT associates on appearance and image-space
-        # motion only. They are carried through for the pose-aware tracker.
+        # landmarks are unused: StrongSORT associates on appearance and
+        # image-space motion only. Carried through for landmark association.
         dets = np.array(
             [[*d.bbox, d.confidence, d.class_id] for d in detections],
             dtype=np.float32,

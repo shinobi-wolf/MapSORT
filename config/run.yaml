@@ -1,11 +1,12 @@
-# Defaults for `localizesort`; any CLI flag overrides its key. Paths are
+# Defaults for `mapsort`; any CLI flag overrides its key. Paths are
 # relative to the repo root.
 dataset: lettucemots
 split: test
 seqs: null  # null = the whole split
 detections: stored  # stored | live
+landmarks: null  # null = none; a backend name loads landmarks/<seq>/<backend>.npz
 limit: null  # frames per sequence; null = all
-config: config/localizesort.yaml
+config: config/mapsort.yaml
 protocol: config/eval.yaml
 task_id: null
 eval: false

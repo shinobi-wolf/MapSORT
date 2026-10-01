@@ -16,14 +16,14 @@ from pathlib import Path
 import numpy as np
 import yaml
 
-from .schemas import Detection
+from .schemas import Detection, LandmarkObservation
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_REGISTRY = REPO_ROOT / "config" / "datasets.yaml"
 
 
 def data_root() -> Path:
-    env = os.environ.get("LOCALIZESORT_DATA")
+    env = os.environ.get("MAPSORT_DATA")
     return Path(env).expanduser() if env else REPO_ROOT / "data"
 
 
@@ -39,7 +39,8 @@ class Sequence:
     name: str
     path: Path  # mot/<split>/<seq>
     dets_path: Path | None  # dets/<seq>.txt
-    pose_path: Path | None  # pose/<seq>.txt
+    landmark_dir: Path  # landmarks/<seq>/
+    landmark_backends: tuple[str, ...]  # backends with landmarks/<seq>/<backend>.txt; empty if none
     recon_path: Path | None  # recon/<seq>/
 
     @property
@@ -61,6 +62,16 @@ class Sequence:
     @property
     def num_frames(self) -> int:
         return int(self.info["seqLength"])
+
+    def landmark_path(self, backend: str) -> Path:
+        """`landmarks/<seq>/<backend>.npz`, e.g. backend `sfm` for the RLoc pseudo-GT."""
+        if backend not in self.landmark_backends:
+            raise FileNotFoundError(
+                f"{self.dataset}/{self.name} has no {backend!r} landmarks "
+                f"(has: {list(self.landmark_backends)}); list it under `landmarks` in "
+                f"config/datasets.yaml and build them (see data/README.md)"
+            )
+        return self.landmark_dir / f"{backend}.npz"
 
     def image_paths(self) -> list[Path]:
         """Frame paths in order; index 0 is frame 1."""
@@ -109,6 +120,36 @@ class Sequence:
                 )
             )
         return dets
+
+    def stored_landmarks(
+        self, backend: str, limit: int | None = None
+    ) -> list[list[LandmarkObservation | None]]:
+        """`landmarks/<seq>/<backend>.npz`, indexed by 0-based frame.
+
+        Each frame's list is parallel to that frame's `stored_detections`, with
+        `None` where the detection yielded no landmark.
+        """
+        data = np.load(self.landmark_path(backend))
+        num = self.num_frames if limit is None else min(limit, self.num_frames)
+        out: list[list[LandmarkObservation | None]] = [[] for _ in range(num)]
+
+        for frame_no, has, position, covariance, extent in zip(
+            data["frame"], data["has_landmark"], data["position"],
+            data["covariance"], data["extent"]
+        ):
+            idx = int(frame_no) - 1
+            if idx >= num:
+                continue
+            out[idx].append(
+                LandmarkObservation(
+                    position=position.astype(float),
+                    covariance=covariance.astype(float),
+                    extent=extent.astype(float),
+                )
+                if has
+                else None
+            )
+        return out
 
     def gt_detections(
         self, limit: int | None = None
@@ -166,7 +207,8 @@ def sequence(dataset: str, split: str, name: str) -> Sequence:
         name=name,
         path=path,
         dets_path=listed("dets", f"{name}.txt"),
-        pose_path=listed("pose", f"{name}.txt"),
+        landmark_dir=root / "landmarks" / name,
+        landmark_backends=tuple(spec.get("landmarks", {}).get(name, ())),
         recon_path=listed("recon", name),
     )
 

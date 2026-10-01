@@ -1,7 +1,7 @@
 """Run the pipeline over a dataset split, optionally scoring and displaying it.
 
-    localizesort --split test --detections stored --eval
-    localizesort --seqs 0011 --viz --viz-compare --no-save --eval
+    mapsort --split test --detections stored --eval
+    mapsort --seqs 0011 --landmarks sfm --no-save --eval
 
 Writes a run directory (see `runs`):
 
@@ -17,7 +17,7 @@ printed, and the whole lot is discarded on exit.
 running is minutes, so a saved run can also be re-scored later without repeating
 it:
 
-    python -m localizesort.eval --run runs/<run_id>
+    python -m mapsort.eval --run runs/<run_id>
 
 Defaults for every flag live in config/run.yaml; flags override them.
 """
@@ -38,7 +38,7 @@ from .eval import protocol
 from .eval.mot_io import filter_frames, write_tracks
 from .eval.revisit import evaluate_revisits
 from .eval.tracking import evaluate, summary_table
-from .main import LocalizeSORT
+from .main import MapSORT
 
 
 def run_sequence(
@@ -46,6 +46,7 @@ def run_sequence(
     config_path: Path,
     *,
     detections: str,
+    landmarks: str | None = None,
     limit: int | None = None,
     window=None,
     compare: bool = False,
@@ -60,10 +61,11 @@ def run_sequence(
     early when the window asks it to -- so the caller must treat the number of
     tracks returned as the number of frames actually processed, not `limit`.
     """
-    pipeline = LocalizeSORT(config_path)
+    pipeline = MapSORT(config_path)
     drawing = window is not None or video_path is not None
 
     stored = seq.stored_detections(limit=limit) if detections == "stored" else None
+    stored_lms = seq.stored_landmarks(landmarks, limit=limit) if landmarks else None
 
     gt_dets, gt_ids = None, None
     if drawing:
@@ -74,7 +76,8 @@ def run_sequence(
     try:
         for frame_idx, frame in enumerate(seq.iter_frames(limit=limit)):
             frame_dets = stored[frame_idx] if stored is not None else None
-            track = pipeline.step(frame_idx, frame, frame_dets)
+            frame_lms = stored_lms[frame_idx] if stored_lms is not None else None
+            track = pipeline.step(frame_idx, frame, frame_dets, frame_lms)
 
             if not drawing:
                 continue
@@ -94,7 +97,7 @@ def run_sequence(
                     [
                         (viz.draw_gt(frame, gt_dets[frame_idx], gt_ids[frame_idx]),
                          "ground truth"),
-                        (canvas, "localizesort"),
+                        (canvas, "mapsort"),
                     ]
                 )
                 canvas = viz.add_header(canvas, position)
@@ -133,6 +136,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         choices=("stored", "live"),
         help="detections from data/<dataset>/dets/, or run the Detector "
         "(stock YOLO finds no lettuce)",
+    )
+    ap.add_argument(
+        "--landmarks",
+        help="mapping backend whose stored landmarks to load from "
+        "data/<dataset>/landmarks/<seq>/<backend>.npz, e.g. sfm; omit for none",
     )
     ap.add_argument("--limit", type=int, help="frames per sequence")
     ap.add_argument("--config", type=Path, help="pipeline config")
@@ -187,6 +195,7 @@ def main() -> None:
         "split": args.split,
         "sequences": [s.name for s in seqs],
         "detections": args.detections,
+        "landmarks": args.landmarks,
         "limit": args.limit,
         "pipeline_config": str(args.config),
         "pipeline": runs.read_yaml(args.config),
@@ -197,7 +206,7 @@ def main() -> None:
             # Nothing is kept, but evaluation reads files, so the artifacts still
             # need somewhere to live for the length of the run.
             run_dir = Path(
-                stack.enter_context(tempfile.TemporaryDirectory(prefix="localizesort-nosave-"))
+                stack.enter_context(tempfile.TemporaryDirectory(prefix="mapsort-nosave-"))
             )
             (run_dir / "artifacts").mkdir()
             print("running without saving (--no-save)")
@@ -233,6 +242,7 @@ def main() -> None:
                 seq,
                 args.config,
                 detections=args.detections,
+                landmarks=args.landmarks,
                 limit=args.limit,
                 window=window,
                 compare=args.viz_compare,
@@ -269,12 +279,12 @@ def main() -> None:
                 print("\nnothing written (--no-save); add --eval for metrics")
             else:
                 print(f"\nartifacts in {run_dir / 'artifacts'}")
-                print(f"score later with: python -m localizesort.eval --run {run_dir}")
+                print(f"score later with: python -m mapsort.eval --run {run_dir}")
             return
 
         proto = protocol.load(args.protocol)
 
-        tmp = Path(stack.enter_context(tempfile.TemporaryDirectory(prefix="localizesort-gt-")))
+        tmp = Path(stack.enter_context(tempfile.TemporaryDirectory(prefix="mapsort-gt-")))
         # A run can cover fewer frames than the sequence has -- via --limit, or by
         # quitting the viz window early -- so the ground truth is cut to exactly
         # the frames that ran. Otherwise every unrun frame scores as a miss.
