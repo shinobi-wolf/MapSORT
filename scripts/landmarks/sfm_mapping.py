@@ -52,6 +52,20 @@ def read_points3D(points_txt: Path) -> dict[int, np.ndarray]:
     return out
 
 
+def read_excess_green(points_txt: Path) -> dict[int, float]:
+    """point3D_id -> excess green, 2g - r - b on chromaticity. Soil is negative, leaf positive."""
+    out = {}
+    for line in points_txt.read_text().splitlines():
+        if line.startswith("#"):
+            continue
+        fields = line.split()
+        rgb = np.array(fields[4:7], dtype=float)
+        total = rgb.sum()
+        r, g, b = rgb / total if total else (0.0, 0.0, 0.0)
+        out[int(fields[0])] = 2 * g - r - b
+    return out
+
+
 def read_focal(cameras_txt: Path) -> float:
     for line in cameras_txt.read_text().splitlines():
         if not line.startswith("#"):
@@ -109,6 +123,8 @@ def main() -> None:
     ap.add_argument("--mode", choices=("gaussian", "nearest"), default="gaussian",
                     help="gaussian: median of inlier points; nearest: LocalizeSORT's nearest-to-centre keypoint")
     ap.add_argument("--mad", type=float, default=3.0, help="depth inlier threshold, in MADs")
+    ap.add_argument("--green", type=float, default=None,
+                    help="keep only points with excess green above this (try 0.02); omit to keep every colour")
     ap.add_argument("--model", type=Path, help="COLMAP text model dir (default: recon/<seq>/model_txt)")
     ap.add_argument("--out", type=Path, help="default: landmarks/<seq>/sfm.npz")
     args = ap.parse_args()
@@ -121,6 +137,7 @@ def main() -> None:
     keypoints = read_keypoints(model / "images.txt")
     points3D = read_points3D(model / "points3D.txt")
     focal = read_focal(model / "cameras.txt")
+    excess_green = read_excess_green(model / "points3D.txt") if args.green is not None else {}
     frames, det_idx, boxes = read_dets(seq.dets_path or root / "dets" / f"{args.seq}.txt")
     # COLMAP was run on the MOT view, so its NAMEs are that sequence's frames.
     frame_image = {i + 1: p.name for i, p in enumerate(seq.image_paths())}
@@ -145,7 +162,16 @@ def main() -> None:
         if not inside.any():
             continue
 
-        pts = np.array([points3D[j] for j in ids[inside]])
+        point_ids = ids[inside]
+        # Colour first, so the depth statistics below see plant points only.
+        if args.green is not None:
+            point_ids = point_ids[
+                np.array([excess_green[j] for j in point_ids]) > args.green
+            ]
+            if not len(point_ids):
+                continue
+
+        pts = np.array([points3D[j] for j in point_ids])
         keep = depth_inliers((pts @ R.T + t)[:, 2], args.mad)
         pts = pts[keep]
         n_kept[i] = len(pts)
@@ -180,6 +206,8 @@ def main() -> None:
         det_idx=det_idx,
         n_inside=n_inside,
         n_kept=n_kept,
+        mad=np.float32(args.mad),  # recorded so readers need not assume the default
+        green=np.float32(np.nan if args.green is None else args.green),
     )
     registered = len({int(f) for f in frames if frame_image[f] in keypoints})
     print(

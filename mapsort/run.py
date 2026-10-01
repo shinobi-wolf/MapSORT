@@ -19,7 +19,8 @@ it:
 
     python -m mapsort.eval --run runs/<run_id>
 
-Defaults for every flag live in config/run.yaml; flags override them.
+Defaults for every flag live in the `run` section of config/mapsort.yaml, which
+also holds the pipeline and the scoring protocol; flags override them.
 """
 
 from __future__ import annotations
@@ -33,7 +34,7 @@ from pathlib import Path
 import yaml
 
 from . import runs
-from .data import REPO_ROOT, Sequence, sequences
+from .data import DEFAULT_CONFIG, Sequence, sequences
 from .eval import protocol
 from .eval.mot_io import filter_frames, write_tracks
 from .eval.revisit import evaluate_revisits
@@ -117,15 +118,12 @@ def run_sequence(
     return pipeline.tracker.tracks, elapsed
 
 
-RUN_CONFIG = REPO_ROOT / "config" / "run.yaml"
-
-
 class _Formatter(argparse.RawDescriptionHelpFormatter, argparse.ArgumentDefaultsHelpFormatter):
     pass
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
-    """Flags, with defaults from config/run.yaml."""
+    """Flags, with defaults from the `run` section of the config."""
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=_Formatter)
     flag = argparse.BooleanOptionalAction
     ap.add_argument("--dataset")
@@ -143,8 +141,9 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         "data/<dataset>/landmarks/<seq>/<backend>.npz, e.g. sfm; omit for none",
     )
     ap.add_argument("--limit", type=int, help="frames per sequence")
-    ap.add_argument("--config", type=Path, help="pipeline config")
-    ap.add_argument("--protocol", type=Path, help="eval protocol")
+    ap.add_argument(
+        "--config", type=Path, default=DEFAULT_CONFIG, help="run, pipeline and protocol config"
+    )
     ap.add_argument("--eval", action=flag, help="score the run when it finishes")
     ap.add_argument(
         "--save", action=flag, help="--no-save keeps nothing: temp directory, metrics printed only"
@@ -156,15 +155,15 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     )
     ap.add_argument("--task-id", help="tracker task this run belongs to, e.g. T06")
 
-    defaults = yaml.safe_load(RUN_CONFIG.read_text())
-    keys = set(vars(ap.parse_args([])))
+    # --config is read before the rest, since it says where the rest comes from.
+    config = ap.parse_known_args(argv)[0].config
+    defaults = yaml.safe_load(Path(config).read_text())["run"]
+    keys = set(vars(ap.parse_args([]))) - {"config"}
     if set(defaults) != keys:
         raise SystemExit(
-            f"{RUN_CONFIG}: unknown keys {sorted(set(defaults) - keys)}, "
+            f"{config}: run section has unknown keys {sorted(set(defaults) - keys)}, "
             f"missing keys {sorted(keys - set(defaults))}"
         )
-    for key in ("config", "protocol"):
-        defaults[key] = str(REPO_ROOT / defaults[key])
     ap.set_defaults(**defaults)
     args = ap.parse_args(argv)
     if args.seqs is not None:
@@ -198,7 +197,7 @@ def main() -> None:
         "landmarks": args.landmarks,
         "limit": args.limit,
         "pipeline_config": str(args.config),
-        "pipeline": runs.read_yaml(args.config),
+        "pipeline": runs.read_yaml(args.config)["pipeline"],
     }
 
     with contextlib.ExitStack() as stack:
@@ -282,7 +281,7 @@ def main() -> None:
                 print(f"score later with: python -m mapsort.eval --run {run_dir}")
             return
 
-        proto = protocol.load(args.protocol)
+        proto = protocol.load(args.config)
 
         tmp = Path(stack.enter_context(tempfile.TemporaryDirectory(prefix="mapsort-gt-")))
         # A run can cover fewer frames than the sequence has -- via --limit, or by

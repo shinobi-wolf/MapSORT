@@ -14,12 +14,11 @@ from pathlib import Path
 import numpy as np
 import yaml
 
+from .data import DEFAULT_CONFIG
 from .detector import Detector
 from .mapping import Mapping
 from .schemas import Detection, LandmarkObservation, Track
 from .tracker import Tracker
-
-DEFAULT_CONFIG = Path(__file__).resolve().parent.parent / "config" / "mapsort.yaml"
 
 
 class MapSORT:
@@ -31,7 +30,7 @@ class MapSORT:
     """
 
     def __init__(self, config_path: str | Path = DEFAULT_CONFIG) -> None:
-        self.config = yaml.safe_load(Path(config_path).read_text())
+        self.config = yaml.safe_load(Path(config_path).read_text())["pipeline"]
 
         self.detector = Detector(**self.config["detector"])
         self.mapping = Mapping(**self.config["mapping"])

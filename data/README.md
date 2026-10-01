@@ -40,13 +40,31 @@ alignment is a length check rather than a key lookup:
 | `extent` | `f32[N,3,3]` | the object's **physical spread** — does not shrink |
 | `frame`, `det_idx` | `i32[N]` | 1-based frame, 0-based index within it |
 | `n_inside`, `n_kept` | `i32[N]` | keypoints in the bbox, and after depth filtering |
+| `mad` | `f32` | the depth-filter threshold these rows were built with; a huge value means none was applied |
+| `green` | `f32` | the excess-green threshold these rows were built with; `nan` means no colour filter |
 
-The depth filter drops points more than 3 MADs from the median camera-frame
-depth — ~8% on 0011, of which 97% are *nearer* than the object body (raised leaf
-tips, triangulation noise) rather than background behind it, since the
-GT-derived boxes are tight enough to enclose little soil. It matters mainly for
-`extent`, which is a sample covariance and so sensitive to outliers; the median
-behind `position` is robust either way.
+The depth filter drops points more than `mad` MADs from the median camera-frame
+depth, and **is off by default on these rows** (`mad` is huge). At the old
+default of 3 it discarded ~8% of in-box points on 0011, but those were mostly
+the plant, not noise: 72% sat within two plant-widths of the centre, and three
+quarters were only 3-5 MADs out — a tail being sliced, not an outlier
+population. A box is a cone, so the camera sees a solid plant's near-facing
+surface and the depths are skewed toward the lens (83% of boxes); a symmetric
+cut then shaves that near face off. Measured, it shrank the spread *along* the
+viewing axis to 82% while leaving the spread *across* it at 100%.
+
+`--green` is the better-targeted filter: COLMAP gives every 3D point a colour,
+and excess green (`2g - r - b` on chromaticity) separates leaf from soil cleanly
+-- soil sits at a median of -0.005 against +0.048 for in-box points, so a cut at
+0.02 discards 91% of soil. Unlike the depth filter it is isotropic, so it removes
+soil showing between the leaves without shaving the plant's near face.
+
+Turning it off costs nothing in `position` (the median is robust) but raises
+`n_kept` ~13%, which *tightens* `covariance = extent / n_kept` and so narrows
+the tracker's Mahalanobis gate. That divisor, not the filter, is the real
+problem: it treats hundreds of keypoints from one reconstruction as independent
+measurements of the centre, claiming ~0.003 when the same plant's estimated
+position moves ~0.29 between camera passes.
 
 `covariance` and `extent` are deliberately separate and differ by roughly 16x on
 0011 (centre sd ~0.025 against extent sd ~0.39). Conflating them is the easy
