@@ -35,7 +35,7 @@ def main() -> None:
     ap.add_argument("--split", default="test")
     ap.add_argument("--seqs", nargs="*", help="sequences to score (default: all present)")
     ap.add_argument(
-        "--protocol", type=Path, help="eval protocol (default: config/eval.yaml)"
+        "--config", type=Path, help="config holding the protocol (default: config/mapsort.yaml)"
     )
     ap.add_argument("--no-revisit", action="store_true", help="skip revisit metrics")
     ap.add_argument(
@@ -64,7 +64,7 @@ def main() -> None:
         if skipped:
             print(f"warning: no tracker file for {skipped}")
 
-    proto = protocol.load(args.protocol)
+    proto = protocol.load(args.config)
     result = evaluate(
         seqs,
         tracker_files,

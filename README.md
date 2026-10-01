@@ -33,7 +33,7 @@ I_t ─> Detector ─> D_t ─┬─> Tracker ─> T (running tracks)
 | [mapsort/viz.py](mapsort/viz.py) | Track overlays and the imshow window. |
 | [mapsort/runs.py](mapsort/runs.py) | Run directories: `runs/<stamp>_<module>/`. |
 | [mapsort/eval/](mapsort/eval/) | Scores run artifacts from disk; never imports the pipeline. |
-| [config/](config/) | `mapsort.yaml` (module kwargs), `datasets.yaml`, `eval.yaml`, `run.yaml` (CLI flag defaults; flags override). |
+| [config/](config/) | `mapsort.yaml`: one file, three sections -- `run` (CLI flag defaults; flags override), `pipeline` (module kwargs), `protocol` (scoring). Plus `datasets.yaml`. |
 | [scripts/data/](scripts/data/) | Builds `mot/` and `dets/` from a dataset's native annotations. |
 | [scripts/landmarks/](scripts/landmarks/) | Builds `landmarks/` — `sfm_mapping.py` extracts them from a COLMAP model. |
 | [lab/](lab/) | Scratch notebook. |
@@ -72,7 +72,7 @@ LettuceMOTS: all 12 sequences have GT and stored detections, only 0011 has a rec
 
 Metrics come from **TrackEval** (`pip install --no-deps trackeval==1.3.0`; `--no-deps` because its metadata wants numpy ≥ 2.3 and this env pins 1.26). Don't use the clone at `~/IISc/TrackEval`, which uses `np.float`.
 
-`CLEAR` gives MOTA and IDSW, `HOTA` gives HOTA and HOTA(0), `Identity` gives IDF1. Fields at the primary threshold (0.5) keep plain names, others are suffixed (`MOTA@0.25`). The protocol is frozen in [config/eval.yaml](config/eval.yaml).
+`CLEAR` gives MOTA and IDSW, `HOTA` gives HOTA and HOTA(0), `Identity` gives IDF1. Fields at the primary threshold (0.5) keep plain names, others are suffixed (`MOTA@0.25`). The protocol is frozen in the `protocol` section of [config/mapsort.yaml](config/mapsort.yaml).
 
 ```bash
 mapsort --split test --detections stored --eval   # run + score
@@ -100,7 +100,7 @@ mapsort --seqs 0011 --viz-save overlay.mp4          # no display needed
 | [eval/tracking.py](mapsort/eval/tracking.py) | Stages files into TrackEval's layout, flattens its output. |
 | [eval/revisit.py](mapsort/eval/revisit.py) | Revisit-restricted identity metrics (not in TrackEval or boxmot). |
 | [eval/mot_io.py](mapsort/eval/mot_io.py) | MOT-format read, write, frame filtering. |
-| [eval/protocol.py](mapsort/eval/protocol.py) | Loads `eval.yaml`. |
+| [eval/protocol.py](mapsort/eval/protocol.py) | Loads the `protocol` section of `mapsort.yaml`. |
 | [eval/\_\_main\_\_.py](mapsort/eval/__main__.py) | Re-scoring CLI. |
 
 **Revisit metrics** ask whether an object's identity survives the camera returning after a gap. Each event is `preserved`, `switch` or `unmatched`; the counts decompose CLEAR's `IDSW` (at `min_gap=0, grace=1` the switch count equals it). `min_gap` (10) is the absence needed to count as a revisit; `grace` (5) is the re-acquisition window, needed because StrongSORT confirms a track only after `n_init=3` hits.

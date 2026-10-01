@@ -38,7 +38,18 @@ runs/*/artifacts/
 *.mp4
 *.avi
 *.mkv
+*.mov
+*.webm
 *.npy
 *.npz
+*.ply
+*.pcd
+*.pkl
+*.log
+
+# Overlays and figures written beside the code
+*.png
+*.jpg
+*.jpeg
 
 tmp

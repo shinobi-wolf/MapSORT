@@ -20,6 +20,7 @@ from .schemas import Detection, LandmarkObservation
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_REGISTRY = REPO_ROOT / "config" / "datasets.yaml"
+DEFAULT_CONFIG = REPO_ROOT / "config" / "mapsort.yaml"
 
 
 def data_root() -> Path:

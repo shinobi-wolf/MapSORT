@@ -1,36 +1,82 @@
-# MapSORT pipeline configuration.
-# Sections map to the constructor arguments of each pipeline module.
+# The single MapSORT configuration: how a run is invoked, what the pipeline is
+# made of, and how its results are scored.
+#
+#   run       defaults for every `mapsort` flag; any flag overrides its key
+#   pipeline  constructor arguments for each pipeline module
+#   protocol  the frozen scoring protocol -- how results are scored, never which
+#
+# Paths are relative to the repo root.
 
-detector:
-  # Stock yolov8n is COCO-trained and detects nothing in the crop datasets;
-  # replace with weights fine-tuned on the target crop.
-  weights: yolov8n.pt
-  conf: 0.25
-  device: null  # null lets ultralytics pick; "cpu", "0", "cuda:0" to pin
+run:
+  dataset: lettucemots
+  split: test
+  seqs: ["0011"]  # null = the whole split
+  detections: stored  # stored | live
+  landmarks: sfm  # null = none; a backend name loads landmarks/<seq>/<backend>.npz
+  limit: null  # frames per sequence; null = all
+  task_id: null
+  eval: true
+  save: true  # false = --no-save
+  viz: false
+  viz_compare: true
+  viz_save: overlay.mp4  # mp4 path
 
-mapping: {}  # stub — returns no landmarks until the CUT3R module lands
+pipeline:
+  detector:
+    # Stock yolov8n is COCO-trained and detects nothing in the crop datasets;
+    # replace with weights fine-tuned on the target crop.
+    weights: yolov8n.pt
+    conf: 0.25
+    device: null  # null lets ultralytics pick; "cpu", "0", "cuda:0" to pin
 
-tracker:
-  # -> boxmot StrongSortConfig
-  strongsort:
-    min_conf: 0.6
-    det_thresh: 0.3
-    max_age: 30
-    max_obs: 50
-    min_hits: 3
-    n_init: 3
-    iou_threshold: 0.3
-    asso_func: iou  # iou | giou | diou | ciou | hmiou | centroid
-    max_cos_dist: 0.4
-    max_iou_dist: 0.7
-    nn_budget: 100
-    mc_lambda: 0.98  # appearance weight in the appearance/motion cost blend
-    ema_alpha: 0.9  # previous-embedding weight in feature smoothing
+  mapping: {}  # stub — returns no landmarks until the CUT3R module lands
 
-  # -> boxmot ReIDConfig
-  reid:
-    model: osnet-x0-25-msmt17
-    device: null
-    precision: null  # fp16 | fp32
-    batch_size: null
-    allow_download: true
+  tracker:
+    # -> boxmot StrongSortConfig
+    strongsort:
+      min_conf: 0.6
+      det_thresh: 0.3
+      max_age: 30
+      max_obs: 50
+      min_hits: 3
+      n_init: 3
+      iou_threshold: 0.3
+      asso_func: iou  # iou | giou | diou | ciou | hmiou | centroid
+      max_cos_dist: 0.4
+      max_iou_dist: 0.7
+      nn_budget: 100
+      mc_lambda: 0.98  # appearance weight in the appearance/motion cost blend
+      ema_alpha: 0.9  # previous-embedding weight in feature smoothing
+
+    # -> MapSort's landmark association; enabled: false is plain StrongSORT
+    landmarks:
+      enabled: true
+      gate: 200  # tuned, not chi2inv95[3] (7.8147): the SfM covariance is ~12x too tight in sd
+      use_appearance: true  # false drops the appearance stage: landmark, then IoU
+      dormancy:
+        # lets a revisit longer than max_age frames reclaim its id
+        enabled: true
+        max_dormant: null  # null = unbounded
+
+    # -> boxmot ReIDConfig
+    reid:
+      model: osnet-x0-25-msmt17
+      device: null
+      precision: null  # fp16 | fp32
+      batch_size: null
+      allow_download: true
+
+protocol:
+  tracking:
+    # IoU thresholds for CLEAR/Identity; primary keeps plain names, others are
+    # suffixed (MOTA, MOTA@0.25). HOTA takes no threshold.
+    thresholds: [0.5, 0.25]
+    primary_threshold: 0.5
+    # Single-class crop data: preprocessing would only filter rows silently.
+    do_preproc: false
+
+  # Revisit-restricted identity metrics (mapsort/eval/revisit.py).
+  revisit:
+    min_gap: 10  # frames absent before a return counts as a revisit
+    grace: 5  # frames allowed to re-acquire; StrongSORT needs n_init=3 hits to confirm
+    window: 30  # frames after each reappearance in the `restricted` metrics
