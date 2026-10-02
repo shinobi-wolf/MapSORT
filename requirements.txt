@@ -1,3 +1,11 @@
-numpy
-ultralytics>=8.3.0
-boxmot
+# Pinned to the versions verified working on the dev laptop (CUDA 13 build).
+# trackeval and boxmot are installed separately by setup.sh/setup.ps1
+# (trackeval needs --no-deps to avoid a numpy upgrade; boxmot is a vendored
+# editable install, not a PyPI package).
+numpy==1.26.4
+scipy==1.17.1
+PyYAML==6.0.3
+ultralytics==8.4.115
+torch==2.12.0
+torchvision==0.27.0
+tabulate==0.10.0
