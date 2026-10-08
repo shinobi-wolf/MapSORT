@@ -1,0 +1,72 @@
+{
+  "config": {
+    "dataset": "moranget",
+    "detections": "stored",
+    "landmarks": "sfm",
+    "limit": null,
+    "pipeline": {
+      "detector": {
+        "conf": 0.25,
+        "device": null,
+        "weights": "yolov8n.pt"
+      },
+      "mapping": {},
+      "tracker": {
+        "landmarks": {
+          "dormancy": {
+            "enabled": true,
+            "max_dormant": null
+          },
+          "enabled": true,
+          "gate": 200,
+          "use_appearance": true
+        },
+        "reid": {
+          "allow_download": true,
+          "batch_size": null,
+          "device": null,
+          "model": "osnet-x0-25-msmt17",
+          "precision": null
+        },
+        "strongsort": {
+          "asso_func": "iou",
+          "det_thresh": 0.3,
+          "ema_alpha": 0.9,
+          "iou_threshold": 0.3,
+          "max_age": 30,
+          "max_cos_dist": 0.4,
+          "max_iou_dist": 0.7,
+          "max_obs": 50,
+          "mc_lambda": 0.98,
+          "min_conf": 0.6,
+          "min_hits": 3,
+          "n_init": 3,
+          "nn_budget": 100
+        }
+      }
+    },
+    "pipeline_config": "/tmp/claude-1000/-home-shinobi-owl-IISc-LocalizeSORTv2/d9765ff9-8783-410c-b64c-f23b10f11b1c/scratchpad/cfg_mapsort.yaml",
+    "sequences": [
+      "V01"
+    ],
+    "split": "test"
+  },
+  "created": "2026-10-07T23:32:06.792175+00:00",
+  "frames_run": {
+    "V01": 408
+  },
+  "git": {
+    "branch": "dev",
+    "commit": "e9011e6066c7e13adeff5c8169b340caedf1ac8c",
+    "dirty": true
+  },
+  "module": "tracker",
+  "run_id": "20261007-233206_tracker",
+  "task_id": "mapsort",
+  "timing": {
+    "seconds_per_sequence": {
+      "V01": 237.40185142799965
+    },
+    "total_seconds": 237.40185142799965
+  }
+}
