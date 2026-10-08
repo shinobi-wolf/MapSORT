@@ -11,3 +11,12 @@ lettucemots:
   landmarks:
     "0011": ["sfm"]
   recon: ["0011"]
+
+# Only V01 is downloaded; upstream ships V01-V12, all as `test`.
+moranget:
+  splits:
+    test: ["V01"]
+  dets: ["V01"]
+  landmarks:
+    V01: ["sfm"]
+  recon: ["V01"]

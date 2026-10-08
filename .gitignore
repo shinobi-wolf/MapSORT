@@ -52,3 +52,7 @@ runs/*/artifacts/
 *.jpeg
 
 tmp
+docs/paper
+docs/slides
+# Stray output from backgrounded runs
+nohup.out

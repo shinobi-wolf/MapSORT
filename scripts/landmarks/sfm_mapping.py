@@ -1,9 +1,10 @@
 """Extract per-detection landmark observations from a COLMAP model (RLoc pseudo-GT).
 
-Each detection's bbox encloses a set of triangulated keypoints. Rejecting depth
-outliers (~8% on 0011, almost all nearer than the object body: raised leaf tips
-and triangulation noise) leaves a point set whose median and scatter give a
-Gaussian over the object's map-frame position.
+Each detection's bbox encloses a set of triangulated keypoints, whose median and
+scatter give a Gaussian over the object's map-frame position. Two optional
+filters trim that set first: `--green` on point colour, and `--min-track` on how
+many images saw the point. A symmetric depth filter used to run here too; it was
+measurably useless on both datasets and has been removed.
 
 Writes `landmarks/<seq>/sfm.npz`, one row per line of `dets/<seq>.txt`, in that
 order, with `has_landmark` marking the detections that enclose no usable point.
@@ -49,6 +50,17 @@ def read_points3D(points_txt: Path) -> dict[int, np.ndarray]:
             continue
         fields = line.split()
         out[int(fields[0])] = np.array(fields[1:4], dtype=float)
+    return out
+
+
+def read_track_length(points_txt: Path) -> dict[int, int]:
+    """point3D_id -> how many images observed it. Short tracks are triangulation noise."""
+    out = {}
+    for line in points_txt.read_text().splitlines():
+        if line.startswith("#"):
+            continue
+        fields = line.split()
+        out[int(fields[0])] = (len(fields) - 8) // 2
     return out
 
 
@@ -104,17 +116,6 @@ def pick_keypoint(bbox: np.ndarray, xy: np.ndarray, ids: np.ndarray) -> tuple[in
     return int(cand_ids[best]), cand[best]
 
 
-def depth_inliers(depths: np.ndarray, k: float = 3.0) -> np.ndarray:
-    """Points within k MADs of the median depth. Mostly matters for the scatter, not the median."""
-    if len(depths) < 3:
-        return np.ones(len(depths), dtype=bool)
-    median = np.median(depths)
-    mad = np.median(np.abs(depths - median))
-    if mad == 0:
-        return np.ones(len(depths), dtype=bool)
-    return np.abs(depths - median) <= k * mad
-
-
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--dataset", default="lettucemots")
@@ -122,7 +123,8 @@ def main() -> None:
     ap.add_argument("--seq", default="0011")
     ap.add_argument("--mode", choices=("gaussian", "nearest"), default="gaussian",
                     help="gaussian: median of inlier points; nearest: LocalizeSORT's nearest-to-centre keypoint")
-    ap.add_argument("--mad", type=float, default=3.0, help="depth inlier threshold, in MADs")
+    ap.add_argument("--min-track", type=int, default=0,
+                    help="drop points seen in fewer than this many images (try 5); 0 keeps every point")
     ap.add_argument("--green", type=float, default=None,
                     help="keep only points with excess green above this (try 0.02); omit to keep every colour")
     ap.add_argument("--model", type=Path, help="COLMAP text model dir (default: recon/<seq>/model_txt)")
@@ -138,6 +140,7 @@ def main() -> None:
     points3D = read_points3D(model / "points3D.txt")
     focal = read_focal(model / "cameras.txt")
     excess_green = read_excess_green(model / "points3D.txt") if args.green is not None else {}
+    track_length = read_track_length(model / "points3D.txt") if args.min_track else {}
     frames, det_idx, boxes = read_dets(seq.dets_path or root / "dets" / f"{args.seq}.txt")
     # COLMAP was run on the MOT view, so its NAMEs are that sequence's frames.
     frame_image = {i + 1: p.name for i, p in enumerate(seq.image_paths())}
@@ -163,20 +166,19 @@ def main() -> None:
             continue
 
         point_ids = ids[inside]
-        # Colour first, so the depth statistics below see plant points only.
         if args.green is not None:
             point_ids = point_ids[
                 np.array([excess_green[j] for j in point_ids]) > args.green
             ]
-            if not len(point_ids):
-                continue
+        if args.min_track and len(point_ids):
+            point_ids = point_ids[
+                np.array([track_length[j] >= args.min_track for j in point_ids])
+            ]
+        if not len(point_ids):
+            continue
 
         pts = np.array([points3D[j] for j in point_ids])
-        keep = depth_inliers((pts @ R.T + t)[:, 2], args.mad)
-        pts = pts[keep]
         n_kept[i] = len(pts)
-        if not len(pts):
-            continue
 
         if args.mode == "nearest":
             hit = pick_keypoint(bbox, xy, ids)
@@ -206,8 +208,8 @@ def main() -> None:
         det_idx=det_idx,
         n_inside=n_inside,
         n_kept=n_kept,
-        mad=np.float32(args.mad),  # recorded so readers need not assume the default
         green=np.float32(np.nan if args.green is None else args.green),
+        min_track=np.int32(args.min_track),  # recorded so readers need not assume the default
     )
     registered = len({int(f) for f in frames if frame_image[f] in keypoints})
     print(
