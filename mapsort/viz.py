@@ -30,7 +30,7 @@ FONT = cv2.FONT_HERSHEY_SIMPLEX
 # the two projects can be read side by side.
 FONT_SCALE = 1.0
 BOX_THICKNESS = 3
-LABEL_STROKE = 4  # black outline behind the label, for legibility over soil
+LABEL_PAD = 3  # padding inside the filled label chip above each box
 
 MATCH_COLOUR = (0, 0, 0)  # BGR black: prediction matched to a GT object
 MISMATCH_COLOUR = (0, 0, 255)  # BGR red: prediction matching no GT object
@@ -96,15 +96,20 @@ def matched_mask(
 
 
 def _label(canvas: np.ndarray, text: str, x: int, y: int, colour: tuple) -> None:
-    """Draw a label above `y`, outlined so it reads over soil as well as leaf."""
-    (_, th), _ = cv2.getTextSize(text, FONT, FONT_SCALE, LABEL_STROKE)
-    baseline = max(y - 8, th + 4)  # keep it on-screen when a box hugs the top
-
-    # A black stroke under the fill; near-black fills get white text instead, so
-    # the matched (black) boxes stay readable.
-    fill = (255, 255, 255) if sum(colour) < 200 else colour
-    cv2.putText(canvas, text, (x, baseline), FONT, FONT_SCALE, (0, 0, 0), LABEL_STROKE, cv2.LINE_AA)
-    cv2.putText(canvas, text, (x, baseline), FONT, FONT_SCALE, fill, 2, cv2.LINE_AA)
+    """Draw a label in a filled chip above `y`, white text on the box's own colour."""
+    (tw, th), _ = cv2.getTextSize(text, FONT, FONT_SCALE, BOX_THICKNESS)
+    top = max(0, y - th - 10)
+    cv2.rectangle(canvas, (x, top), (x + tw + 2 * LABEL_PAD, y), colour, -1)
+    cv2.putText(
+        canvas,
+        text,
+        (x + LABEL_PAD, max(th, y - 6)),
+        FONT,
+        FONT_SCALE,
+        (255, 255, 255),
+        BOX_THICKNESS,
+        cv2.LINE_AA,
+    )
 
 
 def draw_tracks(
@@ -163,15 +168,24 @@ def add_header(image: np.ndarray, text: str) -> np.ndarray:
     """A titled strip above a panel, so stacked panels stay identifiable."""
     width = image.shape[1]
     header = np.full((HEADER_HEIGHT, width, 3), HEADER_BG, dtype=np.uint8)
-    (tw, th), _ = cv2.getTextSize(text, FONT, HEADER_FONT_SCALE, HEADER_THICKNESS)
+
+    # Shrink to fit rather than run off the edge: a narrow panel with a long
+    # title would otherwise lose the end of it.
+    scale, thickness = HEADER_FONT_SCALE, HEADER_THICKNESS
+    while scale > 0.35:
+        (tw, th), _ = cv2.getTextSize(text, FONT, scale, thickness)
+        if tw <= width - 12:
+            break
+        scale -= 0.1
+        thickness = max(1, int(round(scale * 2)))
     cv2.putText(
         header,
         text,
         (max(0, (width - tw) // 2), (HEADER_HEIGHT + th) // 2),
         FONT,
-        HEADER_FONT_SCALE,
+        scale,
         (255, 255, 255),
-        HEADER_THICKNESS,
+        thickness,
         cv2.LINE_AA,
     )
     return np.vstack([header, image])
