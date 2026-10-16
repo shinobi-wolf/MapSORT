@@ -21,11 +21,20 @@ moranget:
     V01: ["sfm"]
   recon: ["V01"]
 
-# Only PathPlanning_7 is unzipped and reconstructed; PathPlanning_1 and _2 are still zips.
+# Upstream ships every sequence as test.
 grapemots:
   splits:
-    test: ["PathPlanning_7"]
+    test: ["PathPlanning_1", "PathPlanning_2", "PathPlanning_7"]
   dets: ["PathPlanning_7"]
   landmarks:
     PathPlanning_7: ["sfm"]
   recon: ["PathPlanning_7"]
+
+# testing 0011 and 0012 repeat 0007 and 0008 (same masks, locally edited pixels).
+applemots:
+  splits:
+    test: ["0006", "0007", "0008", "0010", "0011", "0012"]
+    train: ["0000", "0001", "0002", "0003", "0004", "0005"]
+  dets: []
+  landmarks: {}
+  recon: []

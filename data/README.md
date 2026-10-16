@@ -241,6 +241,20 @@ one sequence, and there is real 3D ground truth to score landmarks against.
   would see. `lab/landmark_overlay.ipynb` reproduces it.
 - COLMAP scale is arbitrary here too; distances are reconstruction units.
 
+GrapeMOTS and AppleMOTS ship per-frame instance masks; their adapters keep only
+frames that have both image and mask (GrapeMOTS PP1 lacks masks for 331-337,
+AppleMOTS 0010 lacks image 96):
+
+```bash
+mkdir -p data/grapemots data/applemots
+ln -s /path/to/grapemots data/grapemots/raw     # PathPlanning_<n>.zip unzipped to PathPlanning_<n>/
+ln -s /path/to/applemots data/applemots/raw     # contains APPLE_MOTS/{train,testing}
+python scripts/data/grapemots_to_mot.py         # writes mot/test/<seq>/
+python scripts/data/applemots_to_mot.py         # writes mot/{train,test}/<seq>/
+```
+
+GrapeMOTS PP1 is 1920x1080 at full 30 fps; PP2 and PP7 are 3840x2160, every second frame.
+
 ## Planned
 
 `lfsd/`, and the remaining eleven MOrangeT sequences.
