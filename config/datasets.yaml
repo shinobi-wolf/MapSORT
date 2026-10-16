@@ -1,7 +1,7 @@
 # What exists under the data root; layout is in data/README.md.
 # mot/ holds every sequence in `splits`; `dets` and `recon` name the sequences
 # that have dets/<seq>.txt and recon/<seq>/, and `landmarks` maps a sequence to the
-# mapping backends it has landmarks from, as landmarks/<seq>/<backend>.txt.
+# mapping backends it has landmarks from, as landmarks/<seq>/<backend>.npz.
 
 lettucemots:
   splits:
@@ -20,3 +20,12 @@ moranget:
   landmarks:
     V01: ["sfm"]
   recon: ["V01"]
+
+# Only PathPlanning_7 is unzipped and reconstructed; PathPlanning_1 and _2 are still zips.
+grapemots:
+  splits:
+    test: ["PathPlanning_7"]
+  dets: ["PathPlanning_7"]
+  landmarks:
+    PathPlanning_7: ["sfm"]
+  recon: ["PathPlanning_7"]
