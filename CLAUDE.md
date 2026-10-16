@@ -13,3 +13,5 @@ Ignore tests dir. I have decided to pause work on testing for now.
 Verbosity level: low. Keep docstrings, comments, and explanations minimal: one-line docstrings at most, comments only where the why is non-obvious, no restating what the code does.
 
 On a shared/public machine (e.g. a university lab rig), `gh auth logout` before ending the session rather than leaving a persistent GitHub login.
+
+Remote option (SW): shinobi-wolf (SW), an always-on Ubuntu PC reached with `ssh shinobi-wolf` over Tailscale. It has bigger storage than the local machine, so some datasets evaluations will be conducted there. Its project root is `~/ISU/sem3/ME_5770/assignments/MapSORT`
