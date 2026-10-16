@@ -58,3 +58,5 @@ docs/slides
 docs/wacv_workshop_paper
 # Stray output from backgrounded runs
 nohup.out
+
+CLAUDE.md
