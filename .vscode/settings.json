@@ -1,8 +1,0 @@
-{
-    "python-envs.defaultEnvManager": "ms-python.python:conda",
-    "python-envs.defaultPackageManager": "ms-python.python:conda",
-    "python.defaultInterpreterPath": "/home/shinobi-owl/anaconda3/envs/nerfly/bin/python",
-    "python.testing.pytestEnabled": true,
-    "python.testing.unittestEnabled": false,
-    "python.testing.pytestArgs": ["tests"]
-}
