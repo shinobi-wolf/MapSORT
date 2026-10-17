@@ -17,6 +17,7 @@ data/<dataset>/
   raw                      symlink -> the original download; never written to
   mot/<split>/<seq>/       canonical MOT view: img1/, gt/gt.txt, seqinfo.ini
   dets/<seq>.txt           detections, MOT det format: frame,-1,x,y,w,h,conf,class
+  masks/<seq>/%06d.png     per-detection instance masks (MOTS datasets): uint16, value k = k-th det of the frame
   landmarks/<seq>/<backend>.npz  per-detection landmark observations
   recon/<seq>/             offline SfM reconstruction (RLoc-style pseudo-GT)
 ```
@@ -254,6 +255,18 @@ python scripts/data/applemots_to_mot.py         # writes mot/{train,test}/<seq>/
 ```
 
 GrapeMOTS PP1 is 1920x1080 at full 30 fps; PP2 and PP7 are 3840x2160, every second frame.
+
+Detections, masks and landmarks:
+
+```bash
+python scripts/data/gt_to_dets.py --dataset grapemots --masks   # dets/<seq>.txt + masks/<seq>/
+python scripts/landmarks/sfm_mapping.py --dataset grapemots --seq PathPlanning_7
+```
+
+`masks/` stands in for a segmenting detector's (YOLO-seg) output, so the mask
+filter carries over once the detector replaces GT. Landmark filters are set per
+sequence in [config/landmark_filters.yaml](../config/landmark_filters.yaml),
+which `sfm_mapping.py` reads for any flag not given on the command line.
 
 ## Planned
 

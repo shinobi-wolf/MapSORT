@@ -1,0 +1,23 @@
+# Per-sequence landmark filters for scripts/landmarks/sfm_mapping.py. Keys are that
+# script's flags; unset = off. MOTS sequences were swept on their own in-box points
+# and the mask-filter config with the best nearest-centre accuracy x coverage kept.
+
+lettucemots:
+  "0011": {green: 0.02}
+
+moranget:
+  V01: {min-track: 5}
+
+grapemots:
+  PathPlanning_1: {masks: true, mask-erode: 16, mask-fallback: true, min-track: 5, far-cut: 3.0}
+  PathPlanning_2: {masks: true, mask-fallback: true, far-cut: 1.5}
+  PathPlanning_7: {masks: true, mask-erode: 4, mask-fallback: true, min-track: 3, far-cut: 1.5}
+
+applemots:
+  "0006": {masks: true, mask-fallback: true}
+  "0007": {masks: true, mask-erode: 1, mask-fallback: true, far-cut: 3.0}
+  "0008": {masks: true, mask-fallback: true}
+  "0010": {masks: true, mask-erode: 1, mask-fallback: true}
+  # 0011 and 0012 repeat 0007 and 0008.
+  "0011": {masks: true, mask-erode: 1, mask-fallback: true, far-cut: 3.0}
+  "0012": {masks: true, mask-fallback: true}

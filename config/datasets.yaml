@@ -25,16 +25,24 @@ moranget:
 grapemots:
   splits:
     test: ["PathPlanning_1", "PathPlanning_2", "PathPlanning_7"]
-  dets: ["PathPlanning_7"]
+  dets: ["PathPlanning_1", "PathPlanning_2", "PathPlanning_7"]
   landmarks:
+    PathPlanning_1: ["sfm"]
+    PathPlanning_2: ["sfm"]
     PathPlanning_7: ["sfm"]
-  recon: ["PathPlanning_7"]
+  recon: ["PathPlanning_1", "PathPlanning_2", "PathPlanning_7"]
 
 # testing 0011 and 0012 repeat 0007 and 0008 (same masks, locally edited pixels).
 applemots:
   splits:
     test: ["0006", "0007", "0008", "0010", "0011", "0012"]
     train: ["0000", "0001", "0002", "0003", "0004", "0005"]
-  dets: []
-  landmarks: {}
-  recon: []
+  dets: ["0006", "0007", "0008", "0010", "0011", "0012"]
+  landmarks:
+    "0006": ["sfm"]
+    "0007": ["sfm"]
+    "0008": ["sfm"]
+    "0010": ["sfm"]
+    "0011": ["sfm"]
+    "0012": ["sfm"]
+  recon: ["0000", "0001", "0002", "0003", "0004", "0005", "0006", "0007", "0008", "0010", "0011", "0012"]

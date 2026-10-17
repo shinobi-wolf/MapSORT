@@ -1,10 +1,14 @@
 """Extract per-detection landmark observations from a COLMAP model (RLoc pseudo-GT).
 
 Each detection's bbox encloses a set of triangulated keypoints, whose median and
-scatter give a Gaussian over the object's map-frame position. Two optional
-filters trim that set first: `--green` on point colour, and `--min-track` on how
-many images saw the point. A symmetric depth filter used to run here too; it was
-measurably useless on both datasets and has been removed.
+scatter give a Gaussian over the object's map-frame position. Optional filters
+trim that set first: `--masks` keeps only keypoints on the detection's own mask
+(eroded by `--mask-erode` px; `--mask-fallback` keeps the box's points when none
+land on it), `--green` filters on point colour, `--min-track` on
+how many images saw the point, and `--far-cut` drops points more than k MADs beyond
+the median camera depth. `--min-kept` drops landmarks left with too few points.
+
+Unset flags default to the sequence's entry in config/landmark_filters.yaml.
 
 Writes `landmarks/<seq>/sfm.npz`, one row per line of `dets/<seq>.txt`, in that
 order, with `has_landmark` marking the detections that enclose no usable point.
@@ -19,8 +23,13 @@ import argparse
 from pathlib import Path
 
 import numpy as np
+import yaml
+from PIL import Image
+from scipy.ndimage import binary_erosion
 
 from mapsort.data import data_root, sequence
+
+FILTERS = Path(__file__).resolve().parents[2] / "config" / "landmark_filters.yaml"
 
 
 def read_keypoints(images_txt: Path) -> dict[str, tuple[np.ndarray, np.ndarray, np.ndarray]]:
@@ -105,6 +114,19 @@ def read_dets(dets_txt: Path) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     return frames, det_idx, np.array(boxes, dtype=float).reshape(-1, 4)
 
 
+def on_own_mask(labels: np.ndarray, k: int, bbox: np.ndarray, xy: np.ndarray, erode: int) -> np.ndarray:
+    """Which keypoints fall on mask k, eroded by `erode` px; the mask is cropped to its bbox first."""
+    x0, y0 = np.floor(bbox[:2]).astype(int).clip(0)
+    x1, y1 = np.ceil(bbox[2:]).astype(int)
+    own = labels[y0:y1 + 1, x0:x1 + 1] == k
+    if erode:
+        own = binary_erosion(own, iterations=erode)
+    px = np.floor(xy).astype(int) - (x0, y0)
+    px[:, 0] = px[:, 0].clip(0, own.shape[1] - 1)
+    px[:, 1] = px[:, 1].clip(0, own.shape[0] - 1)
+    return own[px[:, 1], px[:, 0]]
+
+
 def pick_keypoint(bbox: np.ndarray, xy: np.ndarray, ids: np.ndarray) -> tuple[int, np.ndarray] | None:
     """The bbox's keypoint nearest its centre, as (point3D_id, xy), or None if it holds none."""
     inside = np.all((xy >= bbox[:2]) & (xy <= bbox[2:]), axis=1)
@@ -127,8 +149,19 @@ def main() -> None:
                     help="drop points seen in fewer than this many images (try 5); 0 keeps every point")
     ap.add_argument("--green", type=float, default=None,
                     help="keep only points with excess green above this (try 0.02); omit to keep every colour")
+    ap.add_argument("--masks", action=argparse.BooleanOptionalAction, default=False,
+                    help="keep only keypoints on the detection's mask, from masks/<seq>/")
+    ap.add_argument("--mask-erode", type=int, default=0, help="erode each mask by this many px first")
+    ap.add_argument("--mask-fallback", action=argparse.BooleanOptionalAction, default=False,
+                    help="use the box's points when too few fall on the mask")
+    ap.add_argument("--far-cut", type=float, default=None,
+                    help="drop points deeper than median + k * MAD camera depth; omit to keep all")
+    ap.add_argument("--min-kept", type=int, default=1, help="fewest surviving points that make a landmark")
     ap.add_argument("--model", type=Path, help="COLMAP text model dir (default: recon/<seq>/model_txt)")
     ap.add_argument("--out", type=Path, help="default: landmarks/<seq>/sfm.npz")
+    pre, _ = ap.parse_known_args()
+    preset = (yaml.safe_load(FILTERS.read_text()) or {}).get(pre.dataset, {}).get(pre.seq) or {}
+    ap.set_defaults(**{k.replace("-", "_"): v for k, v in preset.items()})
     args = ap.parse_args()
 
     seq = sequence(args.dataset, args.split, args.seq)
@@ -144,6 +177,8 @@ def main() -> None:
     frames, det_idx, boxes = read_dets(seq.dets_path or root / "dets" / f"{args.seq}.txt")
     # COLMAP was run on the MOT view, so its NAMEs are that sequence's frames.
     frame_image = {i + 1: p.name for i, p in enumerate(seq.image_paths())}
+    mask_dir = root / "masks" / args.seq
+    mask_cache: dict[int, np.ndarray] = {}
 
     n = len(frames)
     has = np.zeros(n, dtype=bool)
@@ -165,16 +200,27 @@ def main() -> None:
         if not inside.any():
             continue
 
+        keep = np.ones(inside.sum(), dtype=bool)
         point_ids = ids[inside]
         if args.green is not None:
-            point_ids = point_ids[
-                np.array([excess_green[j] for j in point_ids]) > args.green
-            ]
-        if args.min_track and len(point_ids):
-            point_ids = point_ids[
-                np.array([track_length[j] >= args.min_track for j in point_ids])
-            ]
-        if not len(point_ids):
+            keep &= np.array([excess_green[j] for j in point_ids]) > args.green
+        if args.min_track:
+            keep &= np.array([track_length[j] >= args.min_track for j in point_ids])
+        if args.masks:
+            if frames[i] not in mask_cache:
+                mask_cache.clear()
+                mask_cache[frames[i]] = np.array(Image.open(mask_dir / f"{frames[i]:06d}.png"))
+            masked = keep & on_own_mask(mask_cache[frames[i]], det_idx[i] + 1, bbox, xy[inside], args.mask_erode)
+            # Fallback: a mask that misses every keypoint still leaves the box's points.
+            if masked.sum() >= max(args.min_kept, 1) or not args.mask_fallback:
+                keep = masked
+        point_ids = point_ids[keep]
+        if args.far_cut is not None and len(point_ids) >= 3:
+            depths = np.array([points3D[j] for j in point_ids]) @ R[2] + t[2]
+            med = np.median(depths)
+            mad = np.median(np.abs(depths - med))
+            point_ids = point_ids[depths <= med + args.far_cut * max(mad, 1e-9)]
+        if len(point_ids) < max(args.min_kept, 1):
             continue
 
         pts = np.array([points3D[j] for j in point_ids])
@@ -210,6 +256,11 @@ def main() -> None:
         n_kept=n_kept,
         green=np.float32(np.nan if args.green is None else args.green),
         min_track=np.int32(args.min_track),  # recorded so readers need not assume the default
+        masks=np.bool_(args.masks),
+        mask_erode=np.int32(args.mask_erode),
+        mask_fallback=np.bool_(args.mask_fallback),
+        far_cut=np.float32(np.nan if args.far_cut is None else args.far_cut),
+        min_kept=np.int32(args.min_kept),
     )
     registered = len({int(f) for f in frames if frame_image[f] in keypoints})
     print(
