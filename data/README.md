@@ -151,8 +151,8 @@ tight bounding boxes and writes the MOT view — its output is byte-identical to
 the three sequences converted upstream, which `--verify` checks.
 
 - **Splits.** `mot/test/` holds the upstream held-out sequences — 0003, 0007,
-  0011, the long ones at 223–245 frames, and what LocalizeSORT reported numbers
-  on. That is the headline eval set. `mot/train/` holds the other nine (45–117
+  0011, the long ones at 223–245 frames. That is the headline eval set.
+  `mot/train/` holds the other nine (45–117
   frames); we never train on them, so they serve as a development set for any
   threshold that must not be fitted on the test set.
 - **GT format** (generated): `frame, track_id, x, y, w, h, conf, class,

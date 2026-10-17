@@ -55,7 +55,7 @@ runs/*/artifacts/
 tmp
 docs/paper
 docs/slides
-docs/wacv_workshop_paper
+docs/precision-ag-paper
 # Stray output from backgrounded runs
 nohup.out
 

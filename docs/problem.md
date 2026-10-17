@@ -1,6 +1,30 @@
-# Problem Statement
+# Problem Statement: Offline multi-object tracking (MOT) of stationary objects from monocular RGB video, using a moving camera.
 
-## Objective: Online multi-object tracking (MOT) of stationary objects from monocular RGB video, using a moving camera.
+Given a monocular RGB video $\{I_1, I_2, \dots, I_T\}$ and, at each frame $t$, a set of detections $D_t = \{d_t^1, \dots, d_t^{n_t}\}$ (bounding boxes, with appearance features), produce a set of tracks
+
+$$\mathcal{T} = \{\tau_1, \dots, \tau_K\}, \qquad \tau_k = \{(t, d_t^{i}) : \text{detection } d_t^i \text{ assigned identity } k\}$$
+
+such that each track corresponds to one physical, stationary object and identity is preserved consistently across frames, through occlusion, visual ambiguity, and camera motion — including when the camera revisits a previously seen location.
+
+### Constraints
+
+- **Input modality:** monocular RGB only (no depth, no odometry).
+- **Offline:** track assignment may use the complete video $I_1, \dots, I_T$; offline per-scene optimization is permitted.
+- **Scope of objects:** stationary objects only, viewed from a moving camera.
+
+### Evaluation
+
+#### Axis 1 — Tracking accuracy
+**Datasets:** LettuceMOT, LFSD, a mango orchard dataset.
+**Metrics:** MOTA, HOTA, IDF1, ID switches.
+
+#### Axis 2 — Re-identification robustness
+**Focus case:** sequences in which the camera revisits a previously tracked, stationary object after a gap.
+**Metrics:** ID switches and IDF1 restricted to revisit events.
+
+---
+
+# Problem Statement: Online multi-object tracking (MOT) of stationary objects from monocular RGB video, using a moving camera.
 
 Given a monocular RGB video $\{I_1, I_2, \dots, I_T\}$ and, at each frame $t$, a set of detections $D_t = \{d_t^1, \dots, d_t^{n_t}\}$ (bounding boxes, with appearance features), produce a set of tracks
 
@@ -30,7 +54,7 @@ Tracks are produced using appearance cues, motion cues, and a landmark cue compu
 
 # Sub-task: Online Mapping
 
-This is the core sub-problem this project addresses. It replaces LocalizeSORT's offline RLoc module with an online, feed-forward, per-frame mapping module, holding the rest of the pipeline (Detector, AppearanceEncoder, TrackAssociation, EKF) fixed. All downstream tracking accuracy in the parent [Evaluation](#evaluation) is mediated entirely through the quality of this sub-task's output, $p_t^i$.
+This is the core sub-problem this project addresses: recovering per-detection 3D landmarks online, causally, from monocular RGB alone — an online, feed-forward, per-frame mapping module, in place of the offline, whole-sequence SfM reconstruction (RLoc) this project uses as its pseudo-ground-truth reference. The rest of the pipeline (Detector, AppearanceEncoder, TrackAssociation, EKF) is held fixed. All downstream tracking accuracy in the parent [Evaluation](#evaluation) is mediated entirely through the quality of this sub-task's output, $p_t^i$.
 
 ## Objective: recover per-detection 3D landmarks, causally, from monocular RGB alone
 
@@ -44,7 +68,7 @@ The module may internally recover a per-frame camera pose and per-pixel scene ge
 
 This directly replaces RLoc: where RLoc solves for $\{p^i\}$ once, offline, via SfM over the complete sequence $\{I_1,\dots,I_T\}$, this sub-task must produce the landmark observation online, at frame $t$, before $I_{t+1},\dots,I_T$ are observed.
 
-**Offline reference backend.** The same Gaussian is extracted from a COLMAP reconstruction as pseudo-GT (`scripts/landmarks/sfm_mapping.py`): the triangulated keypoints inside a detection's bbox, with depth outliers rejected, give $p_t^i$ as their median and $S_t^i$ as their scatter. LocalizeSORT's original RLoc instead took the single keypoint nearest the bbox centre and emitted its 3D point, with no uncertainty — retained as a baseline mode for reproducing its numbers.
+**Offline reference backend.** The same Gaussian is extracted from a COLMAP reconstruction as pseudo-GT (`scripts/landmarks/sfm_mapping.py`): the triangulated keypoints inside a detection's bbox, with depth outliers rejected, give $p_t^i$ as their median and $S_t^i$ as their scatter. A point-estimate mode is also retained: the single keypoint nearest the bbox centre, emitted with no uncertainty, following the classical SfM-based localization used in prior fruit-tracking work (e.g. Liu et al. 2019; Santos et al. 2024).
 
 ### Constraints
 
