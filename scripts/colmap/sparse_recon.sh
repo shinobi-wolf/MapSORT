@@ -2,7 +2,9 @@
 # CPU-only COLMAP sparse reconstruction, tuned for scripts/landmarks/sfm_mapping.py.
 # Usage: sparse_recon.sh <image_dir> <out_dir>
 # Env: MAX_FEATURES (16384), MAX_SIZE (3840), MATCHER (exhaustive|sequential), THREADS (-1 = all),
-#      CAMERA_PARAMS (RADIAL "f,cx,cy,k1,k2"; set it when images carry no EXIF), START (extract|match|map)
+#      CAMERA_PARAMS (RADIAL "f,cx,cy,k1,k2"; set it when images carry no EXIF), START (extract|match|map),
+#      SEQ_OVERLAP (20), LOOP_DETECTION (0|1, sequential only), VOCAB_TREE,
+#      MAPPER_INIT_MIN_INLIERS (100), MAPPER_MIN_NUM_MATCHES (15)
 # Writes <out_dir>/{database.db, sparse/<k>/, refined/, model_txt/, 0*_*.log}; model_txt is the largest model.
 set -euo pipefail
 
@@ -15,6 +17,11 @@ MATCHER=${MATCHER:-exhaustive}
 THREADS=${THREADS:--1}
 CAMERA_PARAMS=${CAMERA_PARAMS:-}
 START=${START:-extract}
+SEQ_OVERLAP=${SEQ_OVERLAP:-20}
+LOOP_DETECTION=${LOOP_DETECTION:-0}
+VOCAB_TREE=$(realpath -m "${VOCAB_TREE:-$(dirname "$(realpath "$0")")/../../models/colmap/vocab_tree_flickr100K_words32K.bin}")
+MAPPER_INIT_MIN_INLIERS=${MAPPER_INIT_MIN_INLIERS:-100}
+MAPPER_MIN_NUM_MATCHES=${MAPPER_MIN_NUM_MATCHES:-15}
 DB=$OUT/database.db
 
 case $START in extract) stage=0 ;; match) stage=1 ;; map) stage=2 ;;
@@ -42,7 +49,9 @@ if (( stage <= 1 )); then
   MATCH_OPTS=(--database_path "$DB" --SiftMatching.use_gpu 0 --SiftMatching.num_threads "$THREADS")
   case $MATCHER in
     exhaustive) colmap exhaustive_matcher "${MATCH_OPTS[@]}" 2>&1 | tee 02_match.log ;;
-    sequential) colmap sequential_matcher "${MATCH_OPTS[@]}" --SequentialMatching.overlap 20 \
+    sequential) colmap sequential_matcher "${MATCH_OPTS[@]}" --SequentialMatching.overlap "$SEQ_OVERLAP" \
+                  --SequentialMatching.loop_detection "$LOOP_DETECTION" \
+                  --SequentialMatching.vocab_tree_path "$VOCAB_TREE" \
                   2>&1 | tee 02_match.log ;;
     *) echo "unknown MATCHER=$MATCHER" >&2; exit 1 ;;
   esac
@@ -66,6 +75,7 @@ colmap mapper \
   --database_path "$DB" --image_path "$IMAGES" --output_path "$OUT/sparse" \
   --Mapper.num_threads "$THREADS" \
   --Mapper.ba_refine_focal_length "$refine" --Mapper.ba_refine_extra_params "$refine" \
+  --Mapper.init_min_num_inliers "$MAPPER_INIT_MIN_INLIERS" --Mapper.min_num_matches "$MAPPER_MIN_NUM_MATCHES" \
   2>&1 | tee 03_mapper.log
 
 best=""; best_n=-1

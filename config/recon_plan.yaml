@@ -1,0 +1,32 @@
+# Batch COLMAP plan run by scripts/colmap/recon_queue.py, in list order.
+# intrinsics: free | "f,cx,cy,k1,k2" (RADIAL, fixed while mapping, refined at the end)
+#             | {from: <dataset>/<seq>} (that sequence's final camera; waits for it)
+# env: extra sparse_recon.sh variables. alias: reuse another sequence's recon (same frames).
+
+defaults:
+  MATCHER: exhaustive
+  MAX_FEATURES: 16384
+
+sequences:
+  # Smoke test: smallest sequence, independent of the others.
+  - {dataset: applemots, split: train, seq: "0000", intrinsics: free}
+  # AppleMOTS calibration source.
+  - {dataset: applemots, split: test, seq: "0008", intrinsics: free}
+  # PP7's refined camera (same 4K rig).
+  - {dataset: grapemots, split: test, seq: PathPlanning_2,
+     intrinsics: "2621.5089576050259,1920,1080,-0.011739528614644961,0.0062182197529814503"}
+  - {dataset: applemots, split: test, seq: "0006", intrinsics: {from: applemots/0008}}
+  - {dataset: applemots, split: test, seq: "0007", intrinsics: {from: applemots/0008}}
+  - {dataset: applemots, split: test, seq: "0010", intrinsics: {from: applemots/0008}}
+  - {dataset: applemots, split: train, seq: "0002", intrinsics: {from: applemots/0008}}
+  - {dataset: applemots, split: train, seq: "0003", intrinsics: {from: applemots/0008}}
+  - {dataset: applemots, split: train, seq: "0005", intrinsics: {from: applemots/0008}}
+  - {dataset: applemots, split: train, seq: "0001", intrinsics: {from: applemots/0008}}
+  # 927 frames at 1080p: exhaustive would be ~430k pairs. PP7's camera halved.
+  - {dataset: grapemots, split: test, seq: PathPlanning_1,
+     intrinsics: "1310.7544788025130,960,540,-0.011739528614644961,0.0062182197529814503",
+     env: {MATCHER: sequential, SEQ_OVERLAP: 30}}
+  - {dataset: applemots, split: train, seq: "0004", intrinsics: {from: applemots/0008}}
+  # Same frames and masks as 0007 / 0008.
+  - {dataset: applemots, split: test, seq: "0011", alias: "0007"}
+  - {dataset: applemots, split: test, seq: "0012", alias: "0008"}

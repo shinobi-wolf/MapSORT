@@ -1,0 +1,37 @@
+{
+  "model": "haiku",
+  "effortLevel": "low",
+  "permissions": {
+    "defaultMode": "dontAsk",
+    "allow": [
+      "Read(~/ISU/sem3/ME_5770/assignments/MapSORT/**)",
+      "Read(~/ISU/sem3/ME_5770/assignments/data/**)",
+      "Grep",
+      "Glob",
+      "Bash(ls:*)", "Bash(cat:*)", "Bash(head:*)", "Bash(tail:*)", "Bash(grep:*)", "Bash(wc:*)",
+      "Bash(date:*)", "Bash(df:*)", "Bash(du:*)", "Bash(free:*)", "Bash(uptime:*)",
+      "Bash(ps:*)", "Bash(pgrep:*)", "Bash(tmux ls:*)", "Bash(tmux has-session:*)",
+      "Bash(colmap model_analyzer:*)",
+      "Edit(~/ISU/sem3/ME_5770/assignments/MapSORT/data/*/recon/*/override.env)",
+      "Edit(~/ISU/sem3/ME_5770/assignments/MapSORT/data/*/recon/*/STATE.json)",
+      "Edit(~/ISU/sem3/ME_5770/assignments/MapSORT/data/recon_supervisor_log.md)",
+      "Edit(~/ISU/sem3/ME_5770/assignments/MapSORT/data/recon_outbox.txt)",
+      "mcp__claude_ai_Gmail__send_message"
+    ],
+    "deny": [
+      "Bash(rm:*)", "Bash(mv:*)", "Bash(git:*)", "Bash(curl:*)", "Bash(wget:*)", "Bash(ssh:*)",
+      "Bash(kill:*)", "Bash(pkill:*)", "Bash(tmux kill-session:*)", "Bash(sudo:*)",
+      "WebFetch", "WebSearch",
+      "mcp__claude_ai_Notion", "mcp__claude_ai_Google_Drive", "mcp__claude_ai_Google_Calendar",
+      "mcp__claude_ai_Claude_Docs"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "mcp__claude_ai_Gmail__send_message",
+        "hooks": [{"type": "command", "command": "python3 \"$CLAUDE_PROJECT_DIR/gmail_guard.py\""}]
+      }
+    ]
+  }
+}
