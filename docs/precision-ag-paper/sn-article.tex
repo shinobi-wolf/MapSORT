@@ -286,8 +286,8 @@ MapSORT is evaluated on four publicly available agricultural MOT datasets and on
 
 \begin{description}
 \item[LettuceMOTS] \citep{hu2024lettucemots} was recorded by a downward-facing camera on a field robot over lettuce at three growth stages. The robot travels back and forth along the rows, so every plant is seen twice, with long absences in between. The three designated test sequences (0003, 0007, 0011) are used.
-\item[MOrangeT] \citep{santos2024moranget} consists of twelve smartphone videos, each sweeping one side of a sweet-orange tree in a commercial grove; the same fruit leaves and re-enters the field of view several times as the camera moves around the canopy. All twelve videos (V01 to V12) are used.
-\item[GrapeMOTS] \citep{arizasentis2024grapemots} was recorded by a UAV over a vineyard. The eight path-planned videos (PathPlanning\_1 to PathPlanning\_8) view the canopy from multiple perspectives to reduce leaf occlusion, and bunches keep their identity across perspectives. These eight are used.
+\item[MOrangeT] \citep{santos2024moranget} consists of smartphone videos, each sweeping one side of a sweet-orange tree in a commercial grove; the same fruit leaves and re-enters the field of view several times as the camera moves around the canopy. V01, V02 and V05 to V12 are used.
+\item[GrapeMOTS] \citep{arizasentis2024grapemots} was recorded by a UAV over a vineyard. Its path-planned videos view the canopy from multiple perspectives to reduce leaf occlusion, and bunches keep their identity across perspectives. PathPlanning\_1, PathPlanning\_2, PathPlanning\_3 and PathPlanning\_7 are used.
 \item[AppleMOTS] \citep{dejong2022applemots} contains UAV and wearable-camera video of apple trees with dense clusters of small, similar fruit. The test split (0006, 0007, 0008, 0010) is used; sequences 0011 and 0012 repeat 0007 and 0008 with locally edited pixels and are excluded. AppleMOTS sequences are continuous sweeps without revisits, and test the landmark cue in short-term association among dense, near-identical fruit.
 \item[MangoYield] was collected for this work in a mango orchard in Bengaluru, India, with an Intel RealSense D435i camera mounted on a DJI Matrice 600 hexacopter. The UAV flew around each of three trees, viewing the canopy from all sides, so that fruit seen early in a flight is seen again as the orbit closes. Only the RGB stream is used. The ground truth is the yield count of each tree, which makes MangoYield a direct test of the quantity yield estimation needs (Sect.~\ref{sec:res-yield}).
 \end{description}
@@ -301,8 +301,8 @@ MapSORT is evaluated on four publicly available agricultural MOT datasets and on
 Dataset & Crop & Platform, view & Seqs & Frames & Resolution & IDs & Boxes & Revisits \\
 \midrule
 LettuceMOTS & Lettuce & Robot, nadir & 3 & 712 & 810$\times$1080 & 114 & 9\,718 & 70 \\
-MOrangeT & Orange & Phone, lateral & 12 & \tbd & 1083$\times$1944 & \tbd & \tbd & \tbd \\
-GrapeMOTS & Grape & UAV, multi-view & 8 & \tbd & $\le$3840$\times$2160 & \tbd & \tbd & \tbd \\
+MOrangeT & Orange & Phone, lateral & 10 & \tbd & 1083$\times$1944 & \tbd & \tbd & \tbd \\
+GrapeMOTS & Grape & UAV, multi-view & 4 & \tbd & $\le$3840$\times$2160 & \tbd & \tbd & \tbd \\
 AppleMOTS & Apple & UAV, wearable & 4 & 626 & 1296$\times$972 & 977 & 27\,533 & 0 \\
 MangoYield (ours) & Mango & UAV, orbit & 3 & \tbd & \tbd & n/a & n/a & n/a \\
 \botrule
@@ -711,10 +711,8 @@ Dataset & Sequence & Frames & Resolution & GT IDs & Boxes & Revisits \\
  & 0007 & 244 & 810$\times$1080 & 37 & 3\,341 & 23 \\
  & 0011 & 223 & 810$\times$1080 & 37 & 3\,073 & 22 \\
 \midrule
-\multirow{12}{*}{MOrangeT} & V01 & 408 & 1083$\times$1944 & 110 & 7\,848 & 104 \\
+\multirow{10}{*}{MOrangeT} & V01 & 408 & 1083$\times$1944 & 110 & 7\,848 & 104 \\
  & V02 & \tbd & \tbd & \tbd & \tbd & \tbd \\
- & V03 & \tbd & \tbd & \tbd & \tbd & \tbd \\
- & V04 & \tbd & \tbd & \tbd & \tbd & \tbd \\
  & V05 & \tbd & \tbd & \tbd & \tbd & \tbd \\
  & V06 & \tbd & \tbd & \tbd & \tbd & \tbd \\
  & V07 & \tbd & \tbd & \tbd & \tbd & \tbd \\
@@ -724,14 +722,10 @@ Dataset & Sequence & Frames & Resolution & GT IDs & Boxes & Revisits \\
  & V11 & \tbd & \tbd & \tbd & \tbd & \tbd \\
  & V12 & \tbd & \tbd & \tbd & \tbd & \tbd \\
 \midrule
-\multirow{8}{*}{GrapeMOTS} & PathPlanning\_1 & 927 & 1920$\times$1080 & 29 & 4\,796 & 0 \\
+\multirow{4}{*}{GrapeMOTS} & PathPlanning\_1 & 927 & 1920$\times$1080 & 29 & 4\,796 & 0 \\
  & PathPlanning\_2 & 209 & 3840$\times$2160 & 45 & 4\,838 & 0 \\
  & PathPlanning\_3 & \tbd & \tbd & \tbd & \tbd & \tbd \\
- & PathPlanning\_4 & \tbd & \tbd & \tbd & \tbd & \tbd \\
- & PathPlanning\_5 & \tbd & \tbd & \tbd & \tbd & \tbd \\
- & PathPlanning\_6 & \tbd & \tbd & \tbd & \tbd & \tbd \\
  & PathPlanning\_7 & 225 & 3840$\times$2160 & 65 & 9\,014 & 23 \\
- & PathPlanning\_8 & \tbd & \tbd & \tbd & \tbd & \tbd \\
 \midrule
 \multirow{4}{*}{AppleMOTS} & 0006 & 101 & 1296$\times$972 & 279 & 4\,524 & 0 \\
  & 0007 & 103 & 1296$\times$972 & 255 & 7\,917 & 0 \\

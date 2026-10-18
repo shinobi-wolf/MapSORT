@@ -2,47 +2,72 @@
 # mot/ holds every sequence in `splits`; `dets` and `recon` name the sequences
 # that have dets/<seq>.txt and recon/<seq>/, and `landmarks` maps a sequence to the
 # mapping backends it has landmarks from, as landmarks/<seq>/<backend>.npz.
+# `masks` names the sequences with masks/<seq>/, and `reid` maps a sequence to the
+# ReID models it has cached embeddings from, as reid/<seq>/<model>.npz.
 
-lettucemots:
-  splits:
-    test: ["0003", "0007", "0011"]
-    train: ["0000", "0001", "0002", "0004", "0005", "0006", "0008", "0009", "0010"]
-  dets: ["0000", "0001", "0002", "0003", "0004", "0005", "0006", "0007", "0008", "0009", "0010", "0011"]
-  landmarks:
-    "0011": ["sfm"]
-  recon: ["0011"]
-
-# Only V01 is downloaded; upstream ships V01-V12, all as `test`.
+# Upstream ships every sequence as test, each with its own COLMAP model (recon/<seq>/sparse).
 moranget:
   splits:
-    test: ["V01"]
-  dets: ["V01"]
+    test: ["V01", "V02", "V05", "V06", "V07", "V08", "V09", "V10", "V11", "V12"]
+  dets: ["V01", "V02", "V05", "V06", "V07", "V08", "V09", "V10", "V11", "V12"]
   landmarks:
-    V01: ["sfm"]
-  recon: ["V01"]
+    V01: ["sfm", "sfm_point"]
+    V02: ["sfm", "sfm_point"]
+    V05: ["sfm", "sfm_point"]
+    V06: ["sfm", "sfm_point"]
+    V07: ["sfm", "sfm_point"]
+    V08: ["sfm", "sfm_point"]
+    V09: ["sfm", "sfm_point"]
+    V10: ["sfm", "sfm_point"]
+    V11: ["sfm", "sfm_point"]
+    V12: ["sfm", "sfm_point"]
+  recon: ["V01", "V02", "V05", "V06", "V07", "V08", "V09", "V10", "V11", "V12"]
+  reid:
+    V01: ["osnet-x0-25-msmt17"]
+    V02: ["osnet-x0-25-msmt17"]
+    V05: ["osnet-x0-25-msmt17"]
+    V06: ["osnet-x0-25-msmt17"]
+    V07: ["osnet-x0-25-msmt17"]
+    V08: ["osnet-x0-25-msmt17"]
+    V09: ["osnet-x0-25-msmt17"]
+    V10: ["osnet-x0-25-msmt17"]
+    V11: ["osnet-x0-25-msmt17"]
+    V12: ["osnet-x0-25-msmt17"]
 
 # Upstream ships every sequence as test.
 grapemots:
   splits:
-    test: ["PathPlanning_1", "PathPlanning_2", "PathPlanning_7"]
-  dets: ["PathPlanning_1", "PathPlanning_2", "PathPlanning_7"]
+    test: ["PathPlanning_1", "PathPlanning_2", "PathPlanning_3", "PathPlanning_7"]
+  dets: ["PathPlanning_1", "PathPlanning_2", "PathPlanning_3", "PathPlanning_7"]
   landmarks:
-    PathPlanning_1: ["sfm"]
-    PathPlanning_2: ["sfm"]
-    PathPlanning_7: ["sfm"]
-  recon: ["PathPlanning_1", "PathPlanning_2", "PathPlanning_7"]
+    PathPlanning_1: ["sfm", "sfm_point"]
+    PathPlanning_2: ["sfm", "sfm_point"]
+    PathPlanning_3: ["sfm", "sfm_point"]
+    PathPlanning_7: ["sfm", "sfm_point"]
+  recon: ["PathPlanning_1", "PathPlanning_2", "PathPlanning_3", "PathPlanning_7"]
+  masks: ["PathPlanning_1", "PathPlanning_2", "PathPlanning_3", "PathPlanning_7"]
+  reid:
+    PathPlanning_1: ["osnet-x0-25-msmt17"]
+    PathPlanning_2: ["osnet-x0-25-msmt17"]
+    PathPlanning_3: ["osnet-x0-25-msmt17"]
+    PathPlanning_7: ["osnet-x0-25-msmt17"]
 
-# testing 0011 and 0012 repeat 0007 and 0008 (same masks, locally edited pixels).
+# Upstream testing 0011 and 0012 repeat 0007 and 0008 (same masks, locally edited
+# pixels), so they are left out; their mot/, dets/, masks/ and landmarks/ remain on disk.
 applemots:
   splits:
-    test: ["0006", "0007", "0008", "0010", "0011", "0012"]
+    test: ["0006", "0007", "0008", "0010"]
     train: ["0000", "0001", "0002", "0003", "0004", "0005"]
-  dets: ["0006", "0007", "0008", "0010", "0011", "0012"]
+  dets: ["0006", "0007", "0008", "0010"]
   landmarks:
-    "0006": ["sfm"]
-    "0007": ["sfm"]
-    "0008": ["sfm"]
-    "0010": ["sfm"]
-    "0011": ["sfm"]
-    "0012": ["sfm"]
-  recon: ["0000", "0001", "0002", "0003", "0004", "0005", "0006", "0007", "0008", "0010", "0011", "0012"]
+    "0006": ["sfm", "sfm_point"]
+    "0007": ["sfm", "sfm_point"]
+    "0008": ["sfm", "sfm_point"]
+    "0010": ["sfm", "sfm_point"]
+  recon: ["0000", "0001", "0002", "0003", "0004", "0005", "0006", "0007", "0008", "0010"]
+  masks: ["0006", "0007", "0008", "0010"]
+  reid:
+    "0006": ["osnet-x0-25-msmt17"]
+    "0007": ["osnet-x0-25-msmt17"]
+    "0008": ["osnet-x0-25-msmt17"]
+    "0010": ["osnet-x0-25-msmt17"]

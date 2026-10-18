@@ -11,7 +11,10 @@ the median camera depth. `--min-kept` drops landmarks left with too few points.
 Unset flags default to the sequence's entry in config/landmark_filters.yaml.
 
 Writes `landmarks/<seq>/sfm.npz`, one row per line of `dets/<seq>.txt`, in that
-order, with `has_landmark` marking the detections that enclose no usable point.
+order, with `has_landmark` marking the detections that enclose no usable point,
+and the 3D point ids each landmark was built from.
+`--mode nearest` writes `sfm_point.npz` instead: the surviving point nearest the box
+centre, for the point-landmark ablation.
 
 Usage:
     python scripts/landmarks/sfm_mapping.py [--dataset lettucemots] [--split test] [--seq 0011]
@@ -167,7 +170,7 @@ def main() -> None:
     seq = sequence(args.dataset, args.split, args.seq)
     root = data_root() / args.dataset
     model = args.model or root / "recon" / args.seq / "model_txt"
-    out = args.out or root / "landmarks" / args.seq / "sfm.npz"
+    out = args.out or root / "landmarks" / args.seq / ("sfm.npz" if args.mode == "gaussian" else "sfm_point.npz")
 
     keypoints = read_keypoints(model / "images.txt")
     points3D = read_points3D(model / "points3D.txt")
@@ -187,6 +190,8 @@ def main() -> None:
     extent = np.full((n, 3, 3), np.nan, dtype=np.float32)
     n_inside = np.zeros(n, dtype=np.int32)
     n_kept = np.zeros(n, dtype=np.int32)
+    radius_all = np.full(n, np.nan)
+    kept_ids: list[np.ndarray] = [np.empty(0, dtype=np.int64)] * n
 
     for i in range(n):
         entry = keypoints.get(frame_image[frames[i]])
@@ -201,7 +206,7 @@ def main() -> None:
             continue
 
         keep = np.ones(inside.sum(), dtype=bool)
-        point_ids = ids[inside]
+        point_ids, point_xy = ids[inside], xy[inside]
         if args.green is not None:
             keep &= np.array([excess_green[j] for j in point_ids]) > args.green
         if args.min_track:
@@ -214,20 +219,22 @@ def main() -> None:
             # Fallback: a mask that misses every keypoint still leaves the box's points.
             if masked.sum() >= max(args.min_kept, 1) or not args.mask_fallback:
                 keep = masked
-        point_ids = point_ids[keep]
+        point_ids, point_xy = point_ids[keep], point_xy[keep]
         if args.far_cut is not None and len(point_ids) >= 3:
             depths = np.array([points3D[j] for j in point_ids]) @ R[2] + t[2]
             med = np.median(depths)
             mad = np.median(np.abs(depths - med))
-            point_ids = point_ids[depths <= med + args.far_cut * max(mad, 1e-9)]
+            near = depths <= med + args.far_cut * max(mad, 1e-9)
+            point_ids, point_xy = point_ids[near], point_xy[near]
         if len(point_ids) < max(args.min_kept, 1):
             continue
 
         pts = np.array([points3D[j] for j in point_ids])
         n_kept[i] = len(pts)
+        kept_ids[i] = point_ids
 
         if args.mode == "nearest":
-            hit = pick_keypoint(bbox, xy, ids)
+            hit = pick_keypoint(bbox, point_xy, point_ids)
             position[i] = points3D[hit[0]]
         else:
             position[i] = np.median(pts, axis=0)
@@ -240,6 +247,7 @@ def main() -> None:
         spread = spread + radius**2 * np.eye(3)
 
         extent[i] = spread
+        radius_all[i] = radius
         covariance[i] = spread / len(pts)
         has[i] = True
 
@@ -261,6 +269,12 @@ def main() -> None:
         mask_fallback=np.bool_(args.mask_fallback),
         far_cut=np.float32(np.nan if args.far_cut is None else args.far_cut),
         min_kept=np.int32(args.min_kept),
+        mode=np.str_(args.mode),
+        # Median object radius in recon units: the scale a Euclidean gate is expressed in.
+        scale=np.float32(np.nanmedian(radius_all) if has.any() else np.nan),
+        # Row i's kept 3D point ids are point_ids[point_offsets[i]:point_offsets[i + 1]].
+        point_ids=np.concatenate(kept_ids).astype(np.int64),
+        point_offsets=np.concatenate([[0], np.cumsum(n_kept)]).astype(np.int64),
     )
     registered = len({int(f) for f in frames if frame_image[f] in keypoints})
     print(

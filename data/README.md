@@ -5,7 +5,7 @@ except this file — the contents are symlinks into machine-specific download
 locations, plus derived views built from them.
 
 [config/datasets.yaml](../config/datasets.yaml) lists each dataset's splits and
-which sequences have dets, landmarks and recon. Code resolves the root from
+which sequences have dets, masks, landmarks, ReID embeddings and recon. Code resolves the root from
 `$MAPSORT_DATA`, falling back to `./data`.
 
 ## Layout
@@ -19,12 +19,26 @@ data/<dataset>/
   dets/<seq>.txt           detections, MOT det format: frame,-1,x,y,w,h,conf,class
   masks/<seq>/%06d.png     per-detection instance masks (MOTS datasets): uint16, value k = k-th det of the frame
   landmarks/<seq>/<backend>.npz  per-detection landmark observations
+  reid/<seq>/<model>.npz   per-detection ReID embeddings, cached
   recon/<seq>/             offline SfM reconstruction (RLoc-style pseudo-GT)
 ```
 
 `landmarks/` is per sequence and then per mapping backend — `sfm.npz` for the
 offline COLMAP baseline, later `cut3r.npz` for the online one — so the two are
-directly comparable on the same detections.
+directly comparable on the same detections. `sfm_point.npz` (`sfm_mapping.py
+--mode nearest`) is the point-landmark ablation: the same filtered points, but
+`position` is the one nearest the box centre rather than their median. Its
+scalar `scale` is the median object radius in recon units (it spans 0.011 to
+451 across sequences), so a Euclidean gate should be expressed in multiples of it.
+
+### ReID cache
+
+`reid/<seq>/<model>.npz` holds `embedding` `f32[N,D]` (L2-normalised), `frame`
+and `det_idx`, one row per line of `dets/<seq>.txt` in that order, plus the
+dets file's `dets_sha256` and the `reid` config they were built with.
+`scripts/reid/reid_cache.py` computes them through boxmot's own per-frame
+embedding call, so they stand in for live ReID exactly; reject the file if the
+hash no longer matches `dets/`. Timing runs must not use it.
 
 ### Landmark format
 
@@ -115,15 +129,24 @@ model ships as `.bin` and has to be converted to the `.txt` the mapping script
 reads:
 
 ```bash
-mkdir -p data/moranget/{dets,landmarks,recon}
-ln -s /path/to/MOrangeT data/moranget/raw
+SEQS="V01 V02 V05 V06 V07 V08 V09 V10 V11 V12"
+mkdir -p data/moranget/raw
+# Each V<nn>.zip unzips to V<nn>/V<nn>/, so raw/ is a directory of per-sequence links.
+for v in $SEQS; do ln -s /path/to/MOrangeT/$v/$v data/moranget/raw/$v; done
 
-python scripts/data/moranget_to_mot.py              # writes mot/test/<seq>/
-ln -s ../../raw/V01/geom data/moranget/recon/V01/sparse
-colmap model_converter --input_path data/moranget/recon/V01/sparse \
-  --output_path data/moranget/recon/V01/model_txt --output_type TXT
-python scripts/data/gt_to_dets.py --dataset moranget
-python scripts/landmarks/sfm_mapping.py --dataset moranget --split test --seq V01 --min-track 5
+python scripts/data/moranget_to_mot.py --seqs $SEQS   # writes mot/test/<seq>/
+for v in $SEQS; do
+  mkdir -p data/moranget/recon/$v/model_txt
+  ln -s ../../raw/$v/geom data/moranget/recon/$v/sparse
+  colmap model_converter --input_path data/moranget/recon/$v/sparse \
+    --output_path data/moranget/recon/$v/model_txt --output_type TXT
+done
+python scripts/data/gt_to_dets.py --dataset moranget --seqs $SEQS
+for v in $SEQS; do   # filters (--min-track 5) come from config/landmark_filters.yaml
+  python scripts/landmarks/sfm_mapping.py --dataset moranget --seq $v
+  python scripts/landmarks/sfm_mapping.py --dataset moranget --seq $v --mode nearest
+done
+python scripts/reid/reid_cache.py --dataset moranget --seqs $SEQS
 ```
 
 ## LettuceMOTS
@@ -175,9 +198,9 @@ the three sequences converted upstream, which `--verify` checks.
 ## MOrangeT
 
 Source: <https://github.com/AgtechFundecitrus/MOrangeT>. Orange trees scanned by
-hand-held phone during the 2022 Fundecitrus harvest survey: 12 sequences, 1198
-tracked fruits, portrait 1083x1944. **Only V01 is downloaded** (408 frames, 110
-oranges); the rest go in `config/datasets.yaml` as they arrive.
+hand-held phone during the 2022 Fundecitrus harvest survey, portrait, about
+1080x1930 (each sequence differs slightly). V01, V02 and V05-V12 are used
+(V01: 408 frames, 110 oranges).
 
 This is the closest thing we have to a purpose-built MapSORT benchmark: every
 sequence ships a COLMAP reconstruction *and* `oranges-3d.txt`, a per-fruit 3D
@@ -193,11 +216,14 @@ one sequence, and there is real 3D ground truth to score landmarks against.
 | `oranges-3d.txt` | `x, y, z, radius` per fruit, in the COLMAP frame. |
 
 - **Splits.** Upstream's seqmap calls all 12 `test`; we keep that, so there is
-  no development split to tune thresholds on. If that bites, carve one out of
-  the sequences still to be downloaded rather than out of V01.
-- **`seqinfo.ini` is wrong upstream** — it claims 1080x1940, but the JPEGs and
+  no development split to tune thresholds on. `--min-track 5` was tuned on V01
+  and applies to every sequence.
+- **`seqinfo.ini` is wrong upstream** — V01's claims 1080x1940, but the JPEGs and
   the GT boxes (max corner 1082x1943) are 1083x1944, as is the COLMAP camera.
   `moranget_to_mot.py` rewrites it from the actual frames.
+- **V05 frames vary in size** (1071x1921 to 1082x1946), and its model has one
+  camera per image; `seqinfo.ini` records the first frame's size, and
+  `sfm_mapping.py` takes the first camera's focal (all within 1.5%).
 - **GT vs dets.** `dets/V01.txt` comes from `gt.txt`, so the 6068 heavily
   occluded boxes in `gt.all.txt` are absent from both GT and detections. A real
   detector would fire on some of them.
@@ -261,6 +287,8 @@ Detections, masks and landmarks:
 ```bash
 python scripts/data/gt_to_dets.py --dataset grapemots --masks   # dets/<seq>.txt + masks/<seq>/
 python scripts/landmarks/sfm_mapping.py --dataset grapemots --seq PathPlanning_7
+python scripts/landmarks/sfm_mapping.py --dataset grapemots --seq PathPlanning_7 --mode nearest  # sfm_point.npz
+python scripts/reid/reid_cache.py --dataset grapemots --seqs PathPlanning_7   # reid/<seq>/<model>.npz
 ```
 
 `masks/` stands in for a segmenting detector's (YOLO-seg) output, so the mask
@@ -270,4 +298,4 @@ which `sfm_mapping.py` reads for any flag not given on the command line.
 
 ## Planned
 
-`lfsd/`, and the remaining eleven MOrangeT sequences.
+`lfsd/`.

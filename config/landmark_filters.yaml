@@ -7,10 +7,20 @@ lettucemots:
 
 moranget:
   V01: {min-track: 5}
+  V02: {min-track: 5}
+  V05: {min-track: 5}
+  V06: {min-track: 5}
+  V07: {min-track: 5}
+  V08: {min-track: 5}
+  V09: {min-track: 5}
+  V10: {min-track: 5}
+  V11: {min-track: 5}
+  V12: {min-track: 5}
 
 grapemots:
   PathPlanning_1: {masks: true, mask-erode: 16, mask-fallback: true, min-track: 5, far-cut: 3.0}
   PathPlanning_2: {masks: true, mask-fallback: true, far-cut: 1.5}
+  PathPlanning_3: {masks: true, mask-erode: 16, mask-fallback: true, far-cut: 3.0}
   PathPlanning_7: {masks: true, mask-erode: 4, mask-fallback: true, min-track: 3, far-cut: 1.5}
 
 applemots:

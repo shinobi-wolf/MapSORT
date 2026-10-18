@@ -30,3 +30,7 @@ sequences:
   # Same frames and masks as 0007 / 0008.
   - {dataset: applemots, split: test, seq: "0011", alias: "0007"}
   - {dataset: applemots, split: test, seq: "0012", alias: "0008"}
+  # 1080p like PP1.
+  - {dataset: grapemots, split: test, seq: PathPlanning_3,
+     intrinsics: "1310.7544788025130,960,540,-0.011739528614644961,0.0062182197529814503",
+     env: {MATCHER: sequential, SEQ_OVERLAP: 30}}
