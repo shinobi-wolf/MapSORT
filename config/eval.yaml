@@ -1,0 +1,43 @@
+data:
+  config: config/datasets.yaml
+
+metrics:
+  tracking:
+    backend: trackeval
+    iou_threshold: 0.5  # CLEAR and Identity; HOTA integrates over alphas
+    do_preproc: false  # single-class crop data
+    report: [HOTA, AssA, DetA, MOTA, IDF1, IDSW]
+
+  count_error:  # 100 * (|IDs_pred| - |IDs_gt|) / |IDs_gt|, signed
+    report: [CE]
+
+  revisit:  # identity preservation on CLEAR's per-frame assignment
+    min_gap: 10  # G: frames out of view before a return counts as a revisit
+    grace: 5  # W: frames allowed to re-acquire after reappearing
+    gap_bins: [10, 30, 60, 120]  # absence-length breakdown; last bin is open
+    report: [RIP]
+
+# hp: overrides of the impl's defaults only, identical across datasets.
+models:
+  strongsort:
+    impl: boxmot  # vendored, 259625c8
+    hp: {}  # StrongSortConfig defaults; they equal config/mapsort.yaml tracker.strongsort
+
+  botsort:
+    impl: boxmot  # vendored, 259625c8
+    hp: {}  # BotSortConfig defaults; frame_rate is per-sequence, set by the runner from data
+
+  sam2mot:
+    impl: boxmot-v25.0.0
+    hp:
+      # Sam2Mot only associates masks it is given; SAM 2 runs upstream,
+      # prompted with each detection box (boxmot.segmentors, backend sam).
+      segmentor:
+        backend: sam
+        artifact: sam2.1_l.pt  # TODO confirm size: t | s | b | l
+
+  mapsort:
+    impl: mapsort
+    hp:
+      landmarks:
+        gate: 200  # universal across datasets
