@@ -7,6 +7,7 @@ data/*
 !data/README.md
 CUT3R
 boxmot
+boxmot-v25.0.0
 
 # Python
 __pycache__/
@@ -59,5 +60,4 @@ docs/precision-ag-paper
 # Stray output from backgrounded runs
 nohup.out
 
-CLAUDE.md
 .vscode/
