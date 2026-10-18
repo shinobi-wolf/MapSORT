@@ -1,0 +1,5 @@
+sequence,reg_frames,points_3d,track_len,reproj_px,coverage_pct,pts_per_LM,sfm_min
+LettuceMOTS 0011,223/223,168466,17.7,0.73,98.6,162,
+MOrangeT V01,408/408,69081,10.0,1.16,76.9,2,
+GrapeMOTS PathPlanning_7,225/225,129210,19.1,0.96,93.3,13,
+AppleMOTS 0008,,,,,,,

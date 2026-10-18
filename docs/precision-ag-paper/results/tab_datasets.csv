@@ -1,0 +1,6 @@
+dataset,crop,platform_view,seqs,frames,resolution,ids,boxes,revisits
+LettuceMOTS,Lettuce,"Robot, nadir",3,712,810x1080,114,9718,70
+MOrangeT,Orange,"Phone, lateral",12,,1083x1944,,,
+GrapeMOTS,Grape,"UAV, multi-view",8,,<=3840x2160,,,
+AppleMOTS,Apple,"UAV, wearable",4,626,1296x972,977,27533,0
+MangoYield,Mango,"UAV, orbit",3,,,n/a,n/a,n/a

@@ -1,0 +1,31 @@
+dataset,sequence,frames,resolution,gt_ids,boxes,revisits
+LettuceMOTS,0003,245,810x1080,40,3304,25
+LettuceMOTS,0007,244,810x1080,37,3341,23
+LettuceMOTS,0011,223,810x1080,37,3073,22
+MOrangeT,V01,408,1083x1944,110,7848,104
+MOrangeT,V02,,,,,
+MOrangeT,V03,,,,,
+MOrangeT,V04,,,,,
+MOrangeT,V05,,,,,
+MOrangeT,V06,,,,,
+MOrangeT,V07,,,,,
+MOrangeT,V08,,,,,
+MOrangeT,V09,,,,,
+MOrangeT,V10,,,,,
+MOrangeT,V11,,,,,
+MOrangeT,V12,,,,,
+GrapeMOTS,PathPlanning_1,927,1920x1080,29,4796,0
+GrapeMOTS,PathPlanning_2,209,3840x2160,45,4838,0
+GrapeMOTS,PathPlanning_3,,,,,
+GrapeMOTS,PathPlanning_4,,,,,
+GrapeMOTS,PathPlanning_5,,,,,
+GrapeMOTS,PathPlanning_6,,,,,
+GrapeMOTS,PathPlanning_7,225,3840x2160,65,9014,23
+GrapeMOTS,PathPlanning_8,,,,,
+AppleMOTS,0006,101,1296x972,279,4524,0
+AppleMOTS,0007,103,1296x972,255,7917,0
+AppleMOTS,0008,322,1296x972,164,10618,0
+AppleMOTS,0010,100,1296x972,279,4474,0
+MangoYield,Tree 1,,,n/a,n/a,n/a
+MangoYield,Tree 2,,,n/a,n/a,n/a
+MangoYield,Tree 3,,,n/a,n/a,n/a

@@ -1,0 +1,24 @@
+component,parameter,value
+Detection,Detector,"YOLO (version TBD), fine-tuned per dataset"
+Detection,Input size,
+Detection,Confidence threshold,
+Scene map,SfM,"COLMAP 3.9.1, shared RADIAL camera"
+Scene map,Features,"SIFT, <=16384 per frame, max side 3840 px"
+Scene map,Matching,Exhaustive
+Landmark filters,LettuceMOTS,Excess green 0.02
+Landmark filters,MOrangeT,Track length >= 5
+Landmark filters,GrapeMOTS,None
+Landmark filters,AppleMOTS,
+Landmark filters,MangoYield,
+Appearance,Re-ID model,"OSNet-x0.25, fine-tuned per dataset"
+Appearance,Max cosine distance,0.4
+Appearance,"Gallery budget, EMA alpha","100, 0.9"
+Appearance,Appearance weight lambda,0.98
+Track management,Confirmation n_init,3
+Track management,Max age A_max,30 frames
+Track management,Max IoU distance,0.7
+Landmark association,Gate tau,200
+Landmark association,Dormant pool size,Unbounded
+Evaluation,IoU threshold,0.5
+Evaluation,"Revisit gap G, grace W","10, 5 frames"
+Evaluation,Toolkit,TrackEval 1.3.0

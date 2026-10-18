@@ -52,11 +52,11 @@ runs/*/artifacts/
 *.png
 *.jpg
 *.jpeg
+!docs/precision-ag-paper/figures/*
 
 tmp
 docs/paper
 docs/slides
-docs/precision-ag-paper
 # Stray output from backgrounded runs
 nohup.out
 

@@ -1,0 +1,17 @@
+dataset,tracker,HOTA,AssA,DetA,MOTA,IDF1,IDSW,CE,RIP
+LettuceMOTS,BoT-SORT,,,,,,,,
+LettuceMOTS,SAM2MOT,,,,,,,,
+LettuceMOTS,StrongSORT,69.97,52.9,92.54,90.82,57.41,167,+107.0,2.9
+LettuceMOTS,MapSORT,,,,,,,,
+MOrangeT,BoT-SORT,,,,,,,,
+MOrangeT,SAM2MOT,,,,,,,,
+MOrangeT,StrongSORT,,,,,,,,
+MOrangeT,MapSORT,,,,,,,,
+GrapeMOTS,BoT-SORT,,,,,,,,
+GrapeMOTS,SAM2MOT,,,,,,,,
+GrapeMOTS,StrongSORT,,,,,,,,
+GrapeMOTS,MapSORT,,,,,,,,
+AppleMOTS,BoT-SORT,,,,,,,,n/a
+AppleMOTS,SAM2MOT,,,,,,,,n/a
+AppleMOTS,StrongSORT,,,,,,,,n/a
+AppleMOTS,MapSORT,,,,,,,,n/a

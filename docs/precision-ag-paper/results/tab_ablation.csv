@@ -1,0 +1,6 @@
+variant,lettuce0011_HOTA,lettuce0011_IDF1,orange_V01_HOTA,orange_V01_IDF1,grape_PP7_HOTA,grape_PP7_IDF1,apple0008_HOTA,apple0008_IDF1,RIP
+(a) StrongSORT,76.33,64.03,71.35,62.77,78.12,72.9,,,10.7
+(b) + landmark assoc.,,,,,,,,,
+(c) + dormancy (MapSORT),96.2,98.04,87.13,84.56,92.25,92.21,,,68.3
+(d) (c) w/o appearance,,,,,,,,,
+"(e) (c), point landmark",,,,,,,,,
