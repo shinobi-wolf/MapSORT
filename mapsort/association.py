@@ -1,4 +1,4 @@
-"""Landmark association: Gaussian fusion and Mahalanobis cost."""
+"""Landmark association: Gaussian fusion and Mahalanobis (or Euclidean) cost."""
 
 from __future__ import annotations
 
@@ -43,12 +43,17 @@ class LandmarkState:
         return covariance @ self.information_mean, covariance
 
 
+DISTANCES = ("mahalanobis", "euclidean")
+
+
 def cost_matrix(
     states: list[LandmarkState],
     observations: list[LandmarkObservation | None],
     infinity: float,
+    distance: str = "mahalanobis",
 ) -> np.ndarray:
-    """Squared Mahalanobis distances, `infinity` where either side has no landmark."""
+    """Squared Mahalanobis distances, or Euclidean distances between centres in map units,
+    `infinity` where either side has no landmark."""
     costs = np.full((len(states), len(observations)), float(infinity))
     for row, state in enumerate(states):
         if state is None or not state.observed:
@@ -58,6 +63,9 @@ def cost_matrix(
             if observation is None:
                 continue
             delta = np.asarray(observation.position, dtype=float) - mean
+            if distance == "euclidean":
+                costs[row, col] = np.linalg.norm(delta)
+                continue
             total = covariance + np.asarray(observation.covariance, dtype=float)
             costs[row, col] = delta @ _inv(total) @ delta
     return costs

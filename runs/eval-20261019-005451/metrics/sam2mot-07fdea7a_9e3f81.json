@@ -1,0 +1,543 @@
+{
+  "revisit": {
+    "combined": {
+      "revisit_events": 23,
+      "revisit_id_preservation": 0.0,
+      "revisit_mean_gap": 57.04347826086956,
+      "revisit_preserved": 0,
+      "revisit_switches": 22,
+      "revisit_unmatched": 1
+    },
+    "config": {
+      "grace": 5,
+      "min_gap": 10,
+      "threshold": 0.5,
+      "window": 0
+    },
+    "events": {
+      "PathPlanning_1": [],
+      "PathPlanning_2": [],
+      "PathPlanning_3": [],
+      "PathPlanning_7": [
+        {
+          "frame": 84,
+          "gap": 77,
+          "gt_id": 64,
+          "id_after": 567,
+          "id_before": 166,
+          "outcome": "switch"
+        },
+        {
+          "frame": 101,
+          "gap": 21,
+          "gt_id": 52,
+          "id_after": 574,
+          "id_before": 530,
+          "outcome": "switch"
+        },
+        {
+          "frame": 110,
+          "gap": 32,
+          "gt_id": 53,
+          "id_after": 549,
+          "id_before": 501,
+          "outcome": "switch"
+        },
+        {
+          "frame": 110,
+          "gap": 33,
+          "gt_id": 54,
+          "id_after": 613,
+          "id_before": 427,
+          "outcome": "switch"
+        },
+        {
+          "frame": 113,
+          "gap": 36,
+          "gt_id": 55,
+          "id_after": 631,
+          "id_before": 481,
+          "outcome": "switch"
+        },
+        {
+          "frame": 116,
+          "gap": 40,
+          "gt_id": 56,
+          "id_after": 650,
+          "id_before": 453,
+          "outcome": "switch"
+        },
+        {
+          "frame": 120,
+          "gap": 44,
+          "gt_id": 57,
+          "id_after": 671,
+          "id_before": 454,
+          "outcome": "switch"
+        },
+        {
+          "frame": 120,
+          "gap": 44,
+          "gt_id": 58,
+          "id_after": 672,
+          "id_before": 455,
+          "outcome": "switch"
+        },
+        {
+          "frame": 130,
+          "gap": 56,
+          "gt_id": 59,
+          "id_after": 672,
+          "id_before": 402,
+          "outcome": "switch"
+        },
+        {
+          "frame": 131,
+          "gap": 58,
+          "gt_id": 60,
+          "id_after": 718,
+          "id_before": 376,
+          "outcome": "switch"
+        },
+        {
+          "frame": 135,
+          "gap": 63,
+          "gt_id": 61,
+          "id_after": 733,
+          "id_before": 305,
+          "outcome": "switch"
+        },
+        {
+          "frame": 137,
+          "gap": 66,
+          "gt_id": 62,
+          "id_after": 740,
+          "id_before": 286,
+          "outcome": "switch"
+        },
+        {
+          "frame": 145,
+          "gap": 76,
+          "gt_id": 63,
+          "id_after": 771,
+          "id_before": 305,
+          "outcome": "switch"
+        },
+        {
+          "frame": 165,
+          "gap": 30,
+          "gt_id": 45,
+          "id_after": 793,
+          "id_before": 547,
+          "outcome": "switch"
+        },
+        {
+          "frame": 220,
+          "gap": 89,
+          "gt_id": 42,
+          "id_after": 1083,
+          "id_before": 238,
+          "outcome": "switch"
+        },
+        {
+          "frame": 220,
+          "gap": 88,
+          "gt_id": 43,
+          "id_after": 1084,
+          "id_before": 278,
+          "outcome": "switch"
+        },
+        {
+          "frame": 220,
+          "gap": 99,
+          "gt_id": 44,
+          "id_after": 1085,
+          "id_before": 669,
+          "outcome": "switch"
+        },
+        {
+          "frame": 220,
+          "gap": 78,
+          "gt_id": 46,
+          "id_after": 1086,
+          "id_before": 407,
+          "outcome": "switch"
+        },
+        {
+          "frame": 220,
+          "gap": 78,
+          "gt_id": 47,
+          "id_after": 1087,
+          "id_before": 533,
+          "outcome": "switch"
+        },
+        {
+          "frame": 220,
+          "gap": 67,
+          "gt_id": 48,
+          "id_after": 1001,
+          "id_before": 610,
+          "outcome": "switch"
+        },
+        {
+          "frame": 220,
+          "gap": 67,
+          "gt_id": 49,
+          "id_after": null,
+          "id_before": 783,
+          "outcome": "unmatched"
+        },
+        {
+          "frame": 220,
+          "gap": 38,
+          "gt_id": 50,
+          "id_after": 1038,
+          "id_before": 786,
+          "outcome": "switch"
+        },
+        {
+          "frame": 220,
+          "gap": 32,
+          "gt_id": 51,
+          "id_after": 907,
+          "id_before": 90,
+          "outcome": "switch"
+        }
+      ]
+    },
+    "per_sequence": {
+      "PathPlanning_1": {
+        "revisit_events": 0,
+        "revisit_id_preservation": NaN,
+        "revisit_mean_gap": NaN,
+        "revisit_preserved": 0,
+        "revisit_switches": 0,
+        "revisit_unmatched": 0
+      },
+      "PathPlanning_2": {
+        "revisit_events": 0,
+        "revisit_id_preservation": NaN,
+        "revisit_mean_gap": NaN,
+        "revisit_preserved": 0,
+        "revisit_switches": 0,
+        "revisit_unmatched": 0
+      },
+      "PathPlanning_3": {
+        "revisit_events": 0,
+        "revisit_id_preservation": NaN,
+        "revisit_mean_gap": NaN,
+        "revisit_preserved": 0,
+        "revisit_switches": 0,
+        "revisit_unmatched": 0
+      },
+      "PathPlanning_7": {
+        "revisit_events": 23,
+        "revisit_id_preservation": 0.0,
+        "revisit_mean_gap": 57.04347826086956,
+        "revisit_preserved": 0,
+        "revisit_switches": 22,
+        "revisit_unmatched": 1
+      }
+    },
+    "restricted": null
+  },
+  "sequences": [
+    "grapemots/PathPlanning_1",
+    "grapemots/PathPlanning_2",
+    "grapemots/PathPlanning_3",
+    "grapemots/PathPlanning_7"
+  ],
+  "spec": {
+    "hp": {
+      "segmentor": {
+        "artifact": "sam2.1_l.pt",
+        "backend": "sam"
+      }
+    },
+    "impl": "boxmot-v25.0.0",
+    "live": false,
+    "source": null,
+    "tracker": "sam2mot"
+  },
+  "timing": {
+    "PathPlanning_1": {
+      "frames": 927,
+      "seconds": 319.73290229891427
+    },
+    "PathPlanning_2": {
+      "frames": 209,
+      "seconds": 7194.220643839915
+    },
+    "PathPlanning_3": {
+      "frames": 400,
+      "seconds": 1219.7040945120389
+    },
+    "PathPlanning_7": {
+      "frames": 225,
+      "seconds": 15460.172559991945
+    }
+  },
+  "tracking": {
+    "combined": {
+      "AssA": 46.635770642005966,
+      "AssPr": 93.11167682928122,
+      "AssRe": 47.37514699137281,
+      "CLR_F1": 97.85475860946023,
+      "CLR_FN": 1054,
+      "CLR_FP": 0,
+      "CLR_Frames": 1761,
+      "CLR_Pr": 100.0,
+      "CLR_Re": 95.79962539353605,
+      "CLR_TP": 24039,
+      "DetA": 95.63590999773706,
+      "DetPr": 99.91264195682017,
+      "DetRe": 95.71593671541864,
+      "Dets": 24039,
+      "FP_per_frame": 0.0,
+      "Frag": 375,
+      "GT_Dets": 25093,
+      "GT_IDs": 196,
+      "HOTA": 66.78363796589653,
+      "HOTA(0)": 66.85859122477746,
+      "HOTALocA(0)": 66.80737586171323,
+      "HOTA_FN": 20425,
+      "HOTA_FP": 399,
+      "HOTA_TP": 456342,
+      "IDF1": 58.2878775543434,
+      "IDFN": 10774,
+      "IDFP": 9720,
+      "IDP": 59.56570572819169,
+      "IDR": 57.063722950623685,
+      "IDSW": 4005,
+      "IDTP": 14319,
+      "IDs": 3208,
+      "LocA": 99.99278554160095,
+      "LocA(0)": 99.92339748396427,
+      "ML": 0,
+      "MLR": 0.0,
+      "MODA": 95.79962539353605,
+      "MOTA": 79.83899892400271,
+      "MOTAL": 95.78526839150193,
+      "MOTP": 100.0,
+      "MOTP_sum": 24039.0,
+      "MT": 183,
+      "MTR": 93.36734693877551,
+      "OWTA": 66.8115743773428,
+      "PT": 13,
+      "PTR": 6.63265306122449,
+      "sMOTA": 79.83899892400271
+    },
+    "config": {
+      "do_preproc": false,
+      "engine": "trackeval 1.3.0",
+      "primary_threshold": 0.5,
+      "sequences": [
+        "grapemots/test/PathPlanning_1",
+        "grapemots/test/PathPlanning_2",
+        "grapemots/test/PathPlanning_3",
+        "grapemots/test/PathPlanning_7"
+      ],
+      "thresholds": [
+        0.5
+      ]
+    },
+    "per_sequence": {
+      "PathPlanning_1": {
+        "AssA": 86.16949649610068,
+        "AssPr": 99.60164561574342,
+        "AssRe": 86.2908942365021,
+        "CLR_F1": 99.96871415163207,
+        "CLR_FN": 3,
+        "CLR_FP": 0,
+        "CLR_Frames": 927,
+        "CLR_Pr": 100.0,
+        "CLR_Re": 99.9374478732277,
+        "CLR_TP": 4793,
+        "DetA": 99.78837170595376,
+        "DetPr": 99.92532970230711,
+        "DetRe": 99.86282428339406,
+        "Dets": 4793,
+        "FP_per_frame": 0.0,
+        "Frag": 3,
+        "GT_Dets": 4796,
+        "GT_IDs": 29,
+        "HOTA": 92.72924841729088,
+        "HOTA(0)": 92.82314814727793,
+        "HOTALocA(0)": 92.75458781141378,
+        "HOTA_FN": 125,
+        "HOTA_FP": 68,
+        "HOTA_TP": 90999,
+        "IDF1": 90.56210240901032,
+        "IDFN": 454,
+        "IDFP": 451,
+        "IDP": 90.59044439808054,
+        "IDR": 90.53377814845705,
+        "IDSW": 230,
+        "IDTP": 4342,
+        "IDs": 244,
+        "LocA": 99.9922251317657,
+        "LocA(0)": 99.92613875177409,
+        "ML": 0,
+        "MLR": 0.0,
+        "MODA": 99.9374478732277,
+        "MOTA": 95.14178482068391,
+        "MOTAL": 99.88820417356092,
+        "MOTP": 100.0,
+        "MOTP_sum": 4793.0,
+        "MT": 29,
+        "MTR": 100.0,
+        "OWTA": 92.76383603218432,
+        "PT": 0,
+        "PTR": 0.0,
+        "sMOTA": 95.14178482068391
+      },
+      "PathPlanning_2": {
+        "AssA": 28.457167027519574,
+        "AssPr": 88.56200569912716,
+        "AssRe": 30.089042783670745,
+        "CLR_F1": 95.94580062372297,
+        "CLR_FN": 377,
+        "CLR_FP": 0,
+        "CLR_Frames": 209,
+        "CLR_Pr": 100.0,
+        "CLR_Re": 92.20752377015296,
+        "CLR_TP": 4461,
+        "DetA": 92.13645965740626,
+        "DetPr": 99.95988626576529,
+        "DetRe": 92.1705358891234,
+        "Dets": 4461,
+        "FP_per_frame": 0.0,
+        "Frag": 131,
+        "GT_Dets": 4838,
+        "GT_IDs": 45,
+        "HOTA": 51.204907994556606,
+        "HOTA(0)": 51.23166790746391,
+        "HOTALocA(0)": 51.21173609435864,
+        "HOTA_FN": 7197,
+        "HOTA_FP": 34,
+        "HOTA_TP": 84725,
+        "IDF1": 42.671254973653085,
+        "IDFN": 2854,
+        "IDFP": 2477,
+        "IDP": 44.47433310916835,
+        "IDR": 41.00868127325341,
+        "IDSW": 987,
+        "IDTP": 1984,
+        "IDs": 829,
+        "LocA": 99.99590470957568,
+        "LocA(0)": 99.96109474096907,
+        "ML": 0,
+        "MLR": 0.0,
+        "MODA": 92.20752377015296,
+        "MOTA": 71.80653162463828,
+        "MOTAL": 92.14563213822511,
+        "MOTP": 100.0,
+        "MOTP_sum": 4461.0,
+        "MT": 40,
+        "MTR": 88.88888888888889,
+        "OWTA": 51.21437623912322,
+        "PT": 5,
+        "PTR": 11.11111111111111,
+        "sMOTA": 71.80653162463828
+      },
+      "PathPlanning_3": {
+        "AssA": 43.29816708230581,
+        "AssPr": 92.12939780809005,
+        "AssRe": 43.5162936300842,
+        "CLR_F1": 98.51192819463034,
+        "CLR_FN": 189,
+        "CLR_FP": 0,
+        "CLR_Frames": 400,
+        "CLR_Pr": 100.0,
+        "CLR_Re": 97.06749418153608,
+        "CLR_TP": 6256,
+        "DetA": 96.95812729362295,
+        "DetPr": 99.94279176201371,
+        "DetRe": 97.01196357845738,
+        "Dets": 6256,
+        "FP_per_frame": 0.0,
+        "Frag": 89,
+        "GT_Dets": 6445,
+        "GT_IDs": 57,
+        "HOTA": 64.7928173632836,
+        "HOTA(0)": 64.8506109917086,
+        "HOTALocA(0)": 64.81492871765097,
+        "HOTA_FN": 3659,
+        "HOTA_FP": 68,
+        "HOTA_TP": 118796,
+        "IDF1": 56.40500747972601,
+        "IDFN": 2863,
+        "IDFP": 2674,
+        "IDP": 57.25703324808185,
+        "IDR": 55.577967416602014,
+        "IDSW": 1379,
+        "IDTP": 3582,
+        "IDs": 1047,
+        "LocA": 99.99441026300478,
+        "LocA(0)": 99.9449777365055,
+        "ML": 0,
+        "MLR": 0.0,
+        "MODA": 97.06749418153608,
+        "MOTA": 75.6710628394104,
+        "MOTAL": 97.01878100440379,
+        "MOTP": 100.0,
+        "MOTP_sum": 6256.0,
+        "MT": 55,
+        "MTR": 96.49122807017544,
+        "OWTA": 64.8108031317393,
+        "PT": 2,
+        "PTR": 3.508771929824561,
+        "sMOTA": 75.6710628394104
+      },
+      "PathPlanning_7": {
+        "AssA": 36.372311311364975,
+        "AssPr": 92.56527906482953,
+        "AssRe": 37.37457462833421,
+        "CLR_F1": 97.2353645328621,
+        "CLR_FN": 485,
+        "CLR_FP": 0,
+        "CLR_Frames": 225,
+        "CLR_Pr": 100.0,
+        "CLR_Re": 94.61948080763257,
+        "CLR_TP": 8529,
+        "DetA": 94.35962154210958,
+        "DetPr": 99.85868646290366,
+        "DetRe": 94.4857706725211,
+        "Dets": 8529,
+        "FP_per_frame": 0.0,
+        "Frag": 152,
+        "GT_Dets": 9014,
+        "GT_IDs": 65,
+        "HOTA": 58.58393497890076,
+        "HOTA(0)": 58.68467461923446,
+        "HOTALocA(0)": 58.61795137099968,
+        "HOTA_FN": 9444,
+        "HOTA_FP": 229,
+        "HOTA_TP": 161822,
+        "IDF1": 50.287864105341164,
+        "IDFN": 4603,
+        "IDFP": 4118,
+        "IDP": 51.717669128854496,
+        "IDR": 48.93499001553139,
+        "IDSW": 1409,
+        "IDTP": 4411,
+        "IDs": 1088,
+        "LocA": 99.99027709688208,
+        "LocA(0)": 99.8863020905071,
+        "ML": 0,
+        "MLR": 0.0,
+        "MODA": 94.61948080763257,
+        "MOTA": 78.98824051475482,
+        "MOTAL": 94.58454724880065,
+        "MOTP": 100.0,
+        "MOTP_sum": 8529.0,
+        "MT": 59,
+        "MTR": 90.76923076923077,
+        "OWTA": 58.62308304095409,
+        "PT": 6,
+        "PTR": 9.230769230769232,
+        "sMOTA": 78.98824051475482
+      }
+    }
+  }
+}

@@ -1,0 +1,350 @@
+{
+  "revisit": {
+    "combined": {
+      "revisit_events": 23,
+      "revisit_id_preservation": 26.08695652173913,
+      "revisit_mean_gap": 57.04347826086956,
+      "revisit_preserved": 6,
+      "revisit_switches": 17,
+      "revisit_unmatched": 0
+    },
+    "config": {
+      "grace": 5,
+      "min_gap": 10,
+      "threshold": 0.5,
+      "window": 0
+    },
+    "events": {
+      "PathPlanning_7": [
+        {
+          "frame": 84,
+          "gap": 77,
+          "gt_id": 64,
+          "id_after": 39,
+          "id_before": 40,
+          "outcome": "switch"
+        },
+        {
+          "frame": 101,
+          "gap": 21,
+          "gt_id": 52,
+          "id_after": 50,
+          "id_before": 32,
+          "outcome": "switch"
+        },
+        {
+          "frame": 110,
+          "gap": 32,
+          "gt_id": 53,
+          "id_after": 45,
+          "id_before": 45,
+          "outcome": "preserved"
+        },
+        {
+          "frame": 110,
+          "gap": 33,
+          "gt_id": 54,
+          "id_after": 34,
+          "id_before": 34,
+          "outcome": "preserved"
+        },
+        {
+          "frame": 113,
+          "gap": 36,
+          "gt_id": 55,
+          "id_after": 35,
+          "id_before": 36,
+          "outcome": "switch"
+        },
+        {
+          "frame": 116,
+          "gap": 40,
+          "gt_id": 56,
+          "id_after": 36,
+          "id_before": 35,
+          "outcome": "switch"
+        },
+        {
+          "frame": 120,
+          "gap": 44,
+          "gt_id": 57,
+          "id_after": 37,
+          "id_before": 37,
+          "outcome": "preserved"
+        },
+        {
+          "frame": 120,
+          "gap": 44,
+          "gt_id": 58,
+          "id_after": 38,
+          "id_before": 38,
+          "outcome": "preserved"
+        },
+        {
+          "frame": 130,
+          "gap": 56,
+          "gt_id": 59,
+          "id_after": 48,
+          "id_before": 41,
+          "outcome": "switch"
+        },
+        {
+          "frame": 131,
+          "gap": 58,
+          "gt_id": 60,
+          "id_after": 58,
+          "id_before": 48,
+          "outcome": "switch"
+        },
+        {
+          "frame": 135,
+          "gap": 63,
+          "gt_id": 61,
+          "id_after": 47,
+          "id_before": 46,
+          "outcome": "switch"
+        },
+        {
+          "frame": 137,
+          "gap": 66,
+          "gt_id": 62,
+          "id_after": 46,
+          "id_before": 47,
+          "outcome": "switch"
+        },
+        {
+          "frame": 145,
+          "gap": 76,
+          "gt_id": 63,
+          "id_after": 42,
+          "id_before": 42,
+          "outcome": "preserved"
+        },
+        {
+          "frame": 165,
+          "gap": 30,
+          "gt_id": 45,
+          "id_after": 25,
+          "id_before": 25,
+          "outcome": "preserved"
+        },
+        {
+          "frame": 220,
+          "gap": 89,
+          "gt_id": 42,
+          "id_after": 91,
+          "id_before": 22,
+          "outcome": "switch"
+        },
+        {
+          "frame": 220,
+          "gap": 88,
+          "gt_id": 43,
+          "id_after": 82,
+          "id_before": 23,
+          "outcome": "switch"
+        },
+        {
+          "frame": 220,
+          "gap": 99,
+          "gt_id": 44,
+          "id_after": 83,
+          "id_before": 24,
+          "outcome": "switch"
+        },
+        {
+          "frame": 220,
+          "gap": 78,
+          "gt_id": 46,
+          "id_after": 84,
+          "id_before": 26,
+          "outcome": "switch"
+        },
+        {
+          "frame": 220,
+          "gap": 78,
+          "gt_id": 47,
+          "id_after": 85,
+          "id_before": 27,
+          "outcome": "switch"
+        },
+        {
+          "frame": 220,
+          "gap": 67,
+          "gt_id": 48,
+          "id_after": 88,
+          "id_before": 6,
+          "outcome": "switch"
+        },
+        {
+          "frame": 220,
+          "gap": 67,
+          "gt_id": 49,
+          "id_after": 89,
+          "id_before": 29,
+          "outcome": "switch"
+        },
+        {
+          "frame": 220,
+          "gap": 38,
+          "gt_id": 50,
+          "id_after": 7,
+          "id_before": 30,
+          "outcome": "switch"
+        },
+        {
+          "frame": 220,
+          "gap": 32,
+          "gt_id": 51,
+          "id_after": 86,
+          "id_before": 31,
+          "outcome": "switch"
+        }
+      ]
+    },
+    "per_sequence": {
+      "PathPlanning_7": {
+        "revisit_events": 23,
+        "revisit_id_preservation": 26.08695652173913,
+        "revisit_mean_gap": 57.04347826086956,
+        "revisit_preserved": 6,
+        "revisit_switches": 17,
+        "revisit_unmatched": 0
+      }
+    },
+    "restricted": null
+  },
+  "sequences": [
+    "grapemots/PathPlanning_7"
+  ],
+  "spec": {
+    "hp": {
+      "landmarks": {
+        "gate": 200
+      }
+    },
+    "impl": "mapsort",
+    "live": true,
+    "source": "sfm",
+    "tracker": "mapsort"
+  },
+  "timing": {
+    "PathPlanning_7": {
+      "frames": 225,
+      "seconds": 269.9308994919993
+    }
+  },
+  "tracking": {
+    "combined": {
+      "AssA": 86.61510750173619,
+      "AssPr": 94.94437184401548,
+      "AssRe": 88.80812059562257,
+      "CLR_F1": 98.85547576301616,
+      "CLR_FN": 204,
+      "CLR_FP": 0,
+      "CLR_Frames": 225,
+      "CLR_Pr": 100.0,
+      "CLR_Re": 97.73685378300422,
+      "CLR_TP": 8810,
+      "DetA": 97.35548450542622,
+      "DetPr": 99.80225819941457,
+      "DetRe": 97.54358716849812,
+      "Dets": 8810,
+      "FP_per_frame": 0.0,
+      "Frag": 49,
+      "GT_Dets": 9014,
+      "GT_IDs": 65,
+      "HOTA": 91.82840317498604,
+      "HOTA(0)": 92.14034374242334,
+      "HOTALocA(0)": 91.96309304523076,
+      "HOTA_FN": 4207,
+      "HOTA_FP": 331,
+      "HOTA_TP": 167059,
+      "IDF1": 91.7975763016158,
+      "IDFN": 833,
+      "IDFP": 629,
+      "IDP": 92.86038592508513,
+      "IDR": 90.75881961393388,
+      "IDSW": 67,
+      "IDTP": 8181,
+      "IDs": 92,
+      "LocA": 99.98414098683783,
+      "LocA(0)": 99.80762965494453,
+      "ML": 0,
+      "MLR": 0.0,
+      "MODA": 97.73685378300422,
+      "MOTA": 96.99356556467717,
+      "MOTAL": 97.71659557574107,
+      "MOTP": 100.0,
+      "MOTP_sum": 8810.0,
+      "MT": 63,
+      "MTR": 96.92307692307692,
+      "OWTA": 91.91707173131776,
+      "PT": 2,
+      "PTR": 3.076923076923077,
+      "sMOTA": 96.99356556467717
+    },
+    "config": {
+      "do_preproc": false,
+      "engine": "trackeval 1.3.0",
+      "primary_threshold": 0.5,
+      "sequences": [
+        "grapemots/test/PathPlanning_7"
+      ],
+      "thresholds": [
+        0.5
+      ]
+    },
+    "per_sequence": {
+      "PathPlanning_7": {
+        "AssA": 86.61510750173619,
+        "AssPr": 94.94437184401548,
+        "AssRe": 88.80812059562257,
+        "CLR_F1": 98.85547576301616,
+        "CLR_FN": 204,
+        "CLR_FP": 0,
+        "CLR_Frames": 225,
+        "CLR_Pr": 100.0,
+        "CLR_Re": 97.73685378300422,
+        "CLR_TP": 8810,
+        "DetA": 97.35548450542622,
+        "DetPr": 99.80225819941457,
+        "DetRe": 97.54358716849812,
+        "Dets": 8810,
+        "FP_per_frame": 0.0,
+        "Frag": 49,
+        "GT_Dets": 9014,
+        "GT_IDs": 65,
+        "HOTA": 91.82840317498604,
+        "HOTA(0)": 92.14034374242334,
+        "HOTALocA(0)": 91.96309304523076,
+        "HOTA_FN": 4207,
+        "HOTA_FP": 331,
+        "HOTA_TP": 167059,
+        "IDF1": 91.7975763016158,
+        "IDFN": 833,
+        "IDFP": 629,
+        "IDP": 92.86038592508513,
+        "IDR": 90.75881961393388,
+        "IDSW": 67,
+        "IDTP": 8181,
+        "IDs": 92,
+        "LocA": 99.98414098683783,
+        "LocA(0)": 99.80762965494453,
+        "ML": 0,
+        "MLR": 0.0,
+        "MODA": 97.73685378300422,
+        "MOTA": 96.99356556467717,
+        "MOTAL": 97.71659557574107,
+        "MOTP": 100.0,
+        "MOTP_sum": 8810.0,
+        "MT": 63,
+        "MTR": 96.92307692307692,
+        "OWTA": 91.91707173131776,
+        "PT": 2,
+        "PTR": 3.076923076923077,
+        "sMOTA": 96.99356556467717
+      }
+    }
+  }
+}

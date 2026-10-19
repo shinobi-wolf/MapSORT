@@ -34,3 +34,7 @@ sequences:
   - {dataset: grapemots, split: test, seq: PathPlanning_3,
      intrinsics: "1310.7544788025130,960,540,-0.011739528614644961,0.0062182197529814503",
      env: {MATCHER: sequential, SEQ_OVERLAP: 30}}
+  # LettuceMOTS calibration source: upstream shipped a COLMAP model of it.
+  - {dataset: lettucemots, split: test, seq: "0011", intrinsics: free}
+  - {dataset: lettucemots, split: test, seq: "0003", intrinsics: {from: lettucemots/0011}}
+  - {dataset: lettucemots, split: test, seq: "0007", intrinsics: {from: lettucemots/0011}}

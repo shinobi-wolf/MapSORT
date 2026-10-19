@@ -408,25 +408,25 @@ The gains concentrate in association: DetA, which reflects localisation and is s
 \toprule
 Dataset & Tracker & HOTA$\uparrow$ & AssA$\uparrow$ & DetA$\uparrow$ & MOTA$\uparrow$ & IDF1$\uparrow$ & IDSW$\downarrow$ & CE$\downarrow$ & RIP$\uparrow$ \\
 \midrule
-\multirow{4}{*}{LettuceMOTS} & BoT-SORT & \tbd & \tbd & \tbd & \tbd & \tbd & \tbd & \tbd & \tbd \\
- & SAM2MOT & \tbd & \tbd & \tbd & \tbd & \tbd & \tbd & \tbd & \tbd \\
+\multirow{4}{*}{LettuceMOTS} & BoT-SORT & 77.65 & 62.92 & 95.83 & 95.02 & 64.90 & 79 & +67.5 & 1.4 \\
+ & SAM2MOT & 74.43 & 56.31 & \textbf{98.37} & 93.30 & 59.78 & 493 & +307.9 & 7.1 \\
  & StrongSORT & 69.97 & 52.90 & 92.54 & 90.82 & 57.41 & 167 & +107.0 & 2.9 \\
- & MapSORT & \tbd & \tbd & \tbd & \tbd & \tbd & \tbd & \tbd & \tbd \\
+ & MapSORT & \textbf{93.81} & \textbf{92.28} & 95.37 & \textbf{95.29} & \textbf{94.56} & \textbf{8} & \textbf{+3.5} & \textbf{91.4} \\
 \midrule
-\multirow{4}{*}{MOrangeT} & BoT-SORT & \tbd & \tbd & \tbd & \tbd & \tbd & \tbd & \tbd & \tbd \\
- & SAM2MOT & \tbd & \tbd & \tbd & \tbd & \tbd & \tbd & \tbd & \tbd \\
- & StrongSORT & \tbd & \tbd & \tbd & \tbd & \tbd & \tbd & \tbd & \tbd \\
- & MapSORT & \tbd & \tbd & \tbd & \tbd & \tbd & \tbd & \tbd & \tbd \\
+\multirow{4}{*}{MOrangeT} & BoT-SORT & 76.97 & 60.28 & 98.28 & \textbf{97.44} & 66.93 & 861 & +84.6 & 9.9 \\
+ & SAM2MOT & 69.72 & 49.04 & \textbf{99.11} & 94.33 & 57.89 & 4997 & +423.3 & 0.3 \\
+ & StrongSORT & 75.77 & 59.69 & 96.18 & 95.25 & 67.08 & 964 & +82.2 & 13.6 \\
+ & MapSORT & \textbf{91.78} & \textbf{86.43} & 97.46 & 97.23 & \textbf{90.77} & \textbf{353} & \textbf{+14.4} & \textbf{74.0} \\
 \midrule
-\multirow{4}{*}{GrapeMOTS} & BoT-SORT & \tbd & \tbd & \tbd & \tbd & \tbd & \tbd & \tbd & \tbd \\
- & SAM2MOT & \tbd & \tbd & \tbd & \tbd & \tbd & \tbd & \tbd & \tbd \\
- & StrongSORT & \tbd & \tbd & \tbd & \tbd & \tbd & \tbd & \tbd & \tbd \\
- & MapSORT & \tbd & \tbd & \tbd & \tbd & \tbd & \tbd & \tbd & \tbd \\
+\multirow{4}{*}{GrapeMOTS} & BoT-SORT & 92.38 & 86.29 & \textbf{98.90} & \textbf{98.61} & 89.99 & \textbf{82} & +30.1 & 0.0 \\
+ & SAM2MOT & 66.78 & 46.64 & 95.64 & 79.84 & 58.29 & 4005 & +1536.7 & 0.0 \\
+ & StrongSORT & 87.44 & 79.01 & 96.76 & 95.79 & 84.87 & 259 & +65.3 & 0.0 \\
+ & MapSORT & \textbf{92.44} & \textbf{87.22} & 97.98 & 97.64 & \textbf{91.92} & 132 & \textbf{-0.5} & \textbf{26.1} \\
 \midrule
-\multirow{4}{*}{AppleMOTS} & BoT-SORT & \tbd & \tbd & \tbd & \tbd & \tbd & \tbd & \tbd & n/a \\
- & SAM2MOT & \tbd & \tbd & \tbd & \tbd & \tbd & \tbd & \tbd & n/a \\
- & StrongSORT & \tbd & \tbd & \tbd & \tbd & \tbd & \tbd & \tbd & n/a \\
- & MapSORT & \tbd & \tbd & \tbd & \tbd & \tbd & \tbd & \tbd & n/a \\
+\multirow{4}{*}{AppleMOTS} & BoT-SORT & \textbf{94.07} & \textbf{92.97} & \textbf{95.17} & \textbf{94.69} & \textbf{95.27} & \textbf{132} & \textbf{+2.0} & n/a \\
+ & SAM2MOT & 63.12 & 43.30 & 92.02 & 56.01 & 50.33 & 9918 & +559.0 & n/a \\
+ & StrongSORT & 77.81 & 77.12 & 78.50 & 75.90 & 78.40 & 717 & +8.3 & n/a \\
+ & MapSORT & 80.84 & 78.87 & 82.85 & 80.02 & 81.19 & 782 & -7.4 & n/a \\
 \botrule
 \end{tabular*}
 \end{table}
@@ -449,25 +449,25 @@ On GrapeMOTS PathPlanning\_7, where the UAV views the vines from several perspec
 \toprule
 Sequence & Tracker & HOTA$\uparrow$ & AssA$\uparrow$ & DetA$\uparrow$ & MOTA$\uparrow$ & IDF1$\uparrow$ & IDSW$\downarrow$ & CE$\downarrow$ & RIP$\uparrow$ \\
 \midrule
-\multirow{4}{*}{\shortstack[l]{LettuceMOTS\\0011}} & BoT-SORT & \tbd & \tbd & \tbd & \tbd & \tbd & \tbd & \tbd & \tbd \\
- & SAM2MOT & \tbd & \tbd & \tbd & \tbd & \tbd & \tbd & \tbd & \tbd \\
+\multirow{4}{*}{\shortstack[l]{LettuceMOTS\\0011}} & BoT-SORT & 77.88 & 63.23 & 95.93 & 95.15 & 64.91 & 24 & +64.9 & 0.0 \\
+ & SAM2MOT & 82.72 & 69.13 & \textbf{98.99} & \textbf{96.94} & 70.84 & 63 & +108.1 & 4.5 \\
  & StrongSORT & 76.33 & 62.17 & 93.72 & 92.97 & 64.03 & 23 & +62.2 & 0.0 \\
- & MapSORT & \textbf{96.20} & \textbf{96.24} & \textbf{96.16} & \textbf{96.16} & \textbf{98.04} & \textbf{0} & \textbf{0.0} & \textbf{100.0} \\
+ & MapSORT & \textbf{92.15} & \textbf{89.00} & 95.41 & 95.31 & \textbf{91.79} & \textbf{3} & \textbf{+5.4} & \textbf{86.4} \\
 \midrule
-\multirow{4}{*}{\shortstack[l]{MOrangeT\\V01}} & BoT-SORT & \tbd & \tbd & \tbd & \tbd & \tbd & \tbd & \tbd & \tbd \\
- & SAM2MOT & \tbd & \tbd & \tbd & \tbd & \tbd & \tbd & \tbd & \tbd \\
+\multirow{4}{*}{\shortstack[l]{MOrangeT\\V01}} & BoT-SORT & 74.39 & 56.94 & \textbf{97.18} & \textbf{95.85} & 64.03 & 105 & +93.6 & 10.0 \\
+ & SAM2MOT & 34.08 & 12.18 & 95.35 & 63.76 & 21.30 & 2479 & +1966.4 & 0.0 \\
  & StrongSORT & 71.35 & 54.42 & 93.57 & 91.92 & 62.77 & 129 & +101.8 & 15.8 \\
- & MapSORT & \textbf{87.13} & \textbf{79.61} & \textbf{95.36} & \textbf{94.47} & \textbf{84.56} & \textbf{70} & \textbf{+41.8} & \textbf{69.0} \\
+ & MapSORT & \textbf{87.13} & \textbf{79.61} & 95.36 & 94.47 & \textbf{84.56} & \textbf{70} & \textbf{+41.8} & \textbf{69.0} \\
 \midrule
-\multirow{4}{*}{\shortstack[l]{GrapeMOTS\\PathPlanning\_7}} & BoT-SORT & \tbd & \tbd & \tbd & \tbd & \tbd & \tbd & \tbd & \tbd \\
- & SAM2MOT & \tbd & \tbd & \tbd & \tbd & \tbd & \tbd & \tbd & \tbd \\
+\multirow{4}{*}{\shortstack[l]{GrapeMOTS\\PathPlanning\_7}} & BoT-SORT & 89.60 & 80.92 & \textbf{99.21} & \textbf{98.86} & 85.48 & \textbf{34} & +43.1 & 0.0 \\
+ & SAM2MOT & 58.58 & 36.37 & 94.36 & 78.99 & 50.29 & 1409 & +1573.8 & 0.0 \\
  & StrongSORT & 78.12 & 63.43 & 96.22 & 94.95 & 72.90 & 125 & +123.1 & 0.0 \\
- & MapSORT & \textbf{92.25} & \textbf{87.39} & \textbf{97.39} & \textbf{97.15} & \textbf{92.21} & \textbf{56} & \textbf{+41.5} & \textbf{34.8} \\
+ & MapSORT & \textbf{91.83} & \textbf{86.62} & 97.36 & 96.99 & \textbf{91.80} & 67 & \textbf{+41.5} & \textbf{26.1} \\
 \midrule
-\multirow{4}{*}{\shortstack[l]{AppleMOTS\\0008}} & BoT-SORT & \tbd & \tbd & \tbd & \tbd & \tbd & \tbd & \tbd & n/a \\
- & SAM2MOT & \tbd & \tbd & \tbd & \tbd & \tbd & \tbd & \tbd & n/a \\
- & StrongSORT & \tbd & \tbd & \tbd & \tbd & \tbd & \tbd & \tbd & n/a \\
- & MapSORT & \tbd & \tbd & \tbd & \tbd & \tbd & \tbd & \tbd & n/a \\
+\multirow{4}{*}{\shortstack[l]{AppleMOTS\\0008}} & BoT-SORT & \textbf{98.79} & \textbf{98.80} & 98.78 & \textbf{98.77} & \textbf{99.37} & \textbf{1} & \textbf{0.0} & n/a \\
+ & SAM2MOT & 88.72 & 79.66 & \textbf{98.81} & 81.72 & 82.11 & 1815 & +906.1 & n/a \\
+ & StrongSORT & 96.44 & 96.09 & 96.80 & 96.67 & 97.68 & 14 & -0.6 & n/a \\
+ & MapSORT & 96.74 & 96.63 & 96.85 & 96.83 & 98.14 & 3 & -1.8 & n/a \\
 \botrule
 \end{tabular*}
 \end{table}
@@ -491,14 +491,14 @@ Fig.~\ref{fig:gap} breaks revisit outcomes down by how long the object was out o
   tick label style={font=\footnotesize}, label style={font=\footnotesize},
   ymajorgrids, grid style={black!12},
 ]
-% StrongSORT and MapSORT: LettuceMOTS 0011, MOrangeT V01, GrapeMOTS PathPlanning_7 pooled (149 events).
-% TODO add BoT-SORT and SAM2MOT, and pool all revisit sequences once runs complete.
-\addplot[fill=black!35] coordinates {(10 to 29,62.5) (30 to 59,0.0) (60 to 119,0.0) ($\geq$120,0.0)};
-\addplot[fill=clm!75!black] coordinates {(10 to 29,84.6) (30 to 59,54.8) (60 to 119,63.4) ($\geq$120,72.3)};
+\addplot[fill=black!35] coordinates {(10 to 29,79.6) (30 to 59,3.1) (60 to 119,0.4) ($\geq$120,0.0)};
+\addplot[fill=black!12, draw=black!50, dashed] coordinates {(10 to 29,57.7) (30 to 59,3.0) (60 to 119,0.0) ($\geq$120,0.0)};
+\addplot[fill=black!12, draw=black!50, dotted] coordinates {(10 to 29,4.7) (30 to 59,0.6) (60 to 119,0.0) ($\geq$120,0.0)};
+\addplot[fill=clm!75!black] coordinates {(10 to 29,89.8) (30 to 59,65.5) (60 to 119,67.1) ($\geq$120,76.2)};
 \addlegendentry{StrongSORT}
+\addlegendentry{BoT-SORT}
+\addlegendentry{SAM2MOT}
 \addlegendentry{MapSORT}
-\addlegendimage{area legend, draw=black!50, dashed, fill=white}\addlegendentry{BoT-SORT (\tbd)}
-\addlegendimage{area legend, draw=black!50, dotted, fill=white}\addlegendentry{SAM2MOT (\tbd)}
 \end{axis}
 \end{tikzpicture}
 \caption{Revisit identity preservation by length of absence, over the 149 revisit events of the representative sequences. StrongSORT deletes tracks unseen for more than 30 frames and preserves no identity beyond that horizon; MapSORT's dormant tracks keep identities recoverable at every absence length.}
@@ -539,11 +539,11 @@ Table~\ref{tab:ablation} isolates each component on the representative sequences
 \cmidrule(lr){2-3}\cmidrule(lr){4-5}\cmidrule(lr){6-7}\cmidrule(lr){8-9}
 Variant & HOTA & IDF1 & HOTA & IDF1 & HOTA & IDF1 & HOTA & IDF1 & RIP \\
 \midrule
-(a) StrongSORT & 76.33 & 64.03 & 71.35 & 62.77 & 78.12 & 72.90 & \tbd & \tbd & 10.7 \\
-(b) + landmark assoc. & \tbd & \tbd & \tbd & \tbd & \tbd & \tbd & \tbd & \tbd & \tbd \\
-(c) + dormancy (MapSORT) & \textbf{96.20} & \textbf{98.04} & \textbf{87.13} & \textbf{84.56} & \textbf{92.25} & \textbf{92.21} & \tbd & \tbd & \textbf{68.3} \\
-(d) (c) w/o appearance & \tbd & \tbd & \tbd & \tbd & \tbd & \tbd & \tbd & \tbd & \tbd \\
-(e) (c), point landmark & \tbd & \tbd & \tbd & \tbd & \tbd & \tbd & \tbd & \tbd & \tbd \\
+(a) StrongSORT & 76.33 & 64.03 & 71.35 & 62.77 & 78.12 & 72.90 & 96.44 & 97.68 & 10.7 \\
+(b) + landmark assoc. & 78.93 & 68.18 & 72.64 & 64.37 & 89.36 & 87.25 & 96.74 & 98.14 & 16.2 \\
+(c) + dormancy (MapSORT) & 92.15 & 91.79 & \textbf{87.13} & \textbf{84.56} & \textbf{91.83} & \textbf{91.80} & 96.74 & 98.14 & \textbf{64.8} \\
+(d) (c) w/o appearance & \textbf{94.01} & \textbf{95.22} & 85.14 & 82.52 & 89.56 & 90.01 & 96.72 & 98.13 & 61.3 \\
+(e) (c), point landmark & 83.70 & 76.25 & 76.66 & 69.37 & 83.05 & 79.62 & \textbf{96.85} & \textbf{98.35} & 26.2 \\
 \botrule
 \end{tabular*}
 \end{table}
@@ -565,11 +565,11 @@ Fig.~\ref{fig:gate} sweeps the landmark gate $\tau$ over two orders of magnitude
   legend to name=gatelegend, legend columns=4, legend style={draw=none, font=\scriptsize, /tikz/every even column/.append style={column sep=6pt}}]
 \draw[dashed, black!45] (axis cs:7.81,50) -- (axis cs:7.81,100);
 % TODO fill the sweep; each series is one representative sequence
-\addplot[clm!75!black, mark=*] coordinates {(200,96.20)};
-\addplot[capp, mark=square*] coordinates {(200,87.13)};
-\addplot[cmap, mark=triangle*] coordinates {(200,92.25)};
-\addlegendimage{black!60, mark=diamond*}
-\legend{Lettuce 0011, Orange V01, Grape PP\_7, Apple 0008 (\tbd)}
+\addplot[clm!75!black, mark=*] coordinates {(7.81,83.19) (25,88.75) (50,91.03) (100,92.15) (200,92.15) (400,92.15) (800,92.15) (1600,92.10)};
+\addplot[capp, mark=square*] coordinates {(7.81,81.82) (25,84.16) (50,85.31) (100,86.44) (200,87.13) (400,86.87) (800,84.62) (1600,80.13)};
+\addplot[cmap, mark=triangle*] coordinates {(7.81,85.07) (25,89.89) (50,90.74) (100,91.48) (200,91.83) (400,90.38) (800,88.08) (1600,88.05)};
+\addplot[black!60, mark=diamond*] coordinates {(7.81,96.85) (25,96.86) (50,96.87) (100,96.83) (200,96.74) (400,96.57) (800,96.40) (1600,95.93)};
+\legend{Lettuce 0011, Orange V01, Grape PP\_7, Apple 0008}
 \end{axis}
 \end{tikzpicture}\hfill
 \begin{tikzpicture}
@@ -580,9 +580,9 @@ Fig.~\ref{fig:gate} sweeps the landmark gate $\tau$ over two orders of magnitude
   tick label style={font=\scriptsize}, label style={font=\footnotesize},
   ymajorgrids, grid style={black!12}, mark size=1.8pt, ymin=0, ymax=105, ylabel={RIP (\%)}]
 \draw[dashed, black!45] (axis cs:7.81,0) -- (axis cs:7.81,105) node[pos=0.08, right, font=\tiny, black!60] {$\chi^2_3(0.95)$};
-\addplot[clm!75!black, mark=*] coordinates {(200,100.0)};
-\addplot[capp, mark=square*] coordinates {(200,69.0)};
-\addplot[cmap, mark=triangle*] coordinates {(200,34.8)};
+\addplot[clm!75!black, mark=*] coordinates {(7.81,31.80) (25,63.60) (50,77.30) (100,86.40) (200,86.40) (400,86.40) (800,86.40) (1600,81.80)};
+\addplot[capp, mark=square*] coordinates {(7.81,52.10) (25,61.90) (50,65.70) (100,68.00) (200,69.00) (400,69.00) (800,60.00) (1600,52.00)};
+\addplot[cmap, mark=triangle*] coordinates {(7.81,0.00) (25,13.00) (50,21.70) (100,30.40) (200,26.10) (400,26.10) (800,26.10) (1600,26.10)};
 \end{axis}
 \end{tikzpicture}\\[2pt]
 \pgfplotslegendfromname{gatelegend}
@@ -626,10 +626,10 @@ Table~\ref{tab:runtime} reports tracking throughput. MapSORT runs at the same th
 \toprule
 Sequence & Hardware & BoT-SORT & SAM2MOT & StrongSORT & MapSORT \\
 \midrule
-LettuceMOTS 0011 & L & \tbd & \tbd & 5.05 & 4.03 \\
-MOrangeT V01 & L & \tbd & \tbd & 1.70 & 1.72 \\
-GrapeMOTS PP\_7 & W & \tbd & \tbd & 0.70 & 0.70 \\
-AppleMOTS 0008 & W & \tbd & \tbd & \tbd & \tbd \\
+LettuceMOTS 0011 & W & 4.22 & 2.54 & 3.75 & 4.17 \\
+MOrangeT V01 & W & 2.03 & 0.11 & 1.87 & 1.82 \\
+GrapeMOTS PP\_7 & W & 0.90 & 0.01 & 0.83 & 0.83 \\
+AppleMOTS 0008 & W & 1.48 & 0.16 & 1.42 & 1.40 \\
 \botrule
 \end{tabular*}
 \end{table}

@@ -3,7 +3,9 @@
 # and the mask-filter config with the best nearest-centre accuracy x coverage kept.
 
 lettucemots:
-  "0011": {green: 0.02}
+  "0003": {masks: true, mask-fallback: true}
+  "0007": {masks: true, mask-fallback: true}
+  "0011": {masks: true, mask-fallback: true}
 
 moranget:
   V01: {min-track: 5}

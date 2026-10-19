@@ -71,3 +71,19 @@ applemots:
     "0007": ["osnet-x0-25-msmt17"]
     "0008": ["osnet-x0-25-msmt17"]
     "0010": ["osnet-x0-25-msmt17"]
+
+# Upstream's held-out sequences; the nine train sequences' frames are not downloaded.
+lettucemots:
+  splits:
+    test: ["0003", "0007", "0011"]
+  dets: ["0003", "0007", "0011"]
+  recon: ["0003", "0007", "0011"]
+  masks: ["0003", "0007", "0011"]
+  landmarks:
+    "0003": ["sfm", "sfm_point"]
+    "0007": ["sfm", "sfm_point"]
+    "0011": ["sfm", "sfm_point"]
+  reid:
+    "0003": ["osnet-x0-25-msmt17"]
+    "0007": ["osnet-x0-25-msmt17"]
+    "0011": ["osnet-x0-25-msmt17"]

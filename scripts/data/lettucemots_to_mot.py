@@ -14,7 +14,7 @@ Sequences land under the split their annotations come from, so `mot/test/` holds
 the upstream held-out sequences (0003, 0007, 0011) and `mot/train/` the other
 nine. For each it writes `<data_root>/lettucemots/mot/<split>/<seq>/`:
 
-    img1/%06d.png    symlinks into raw/images/<seq>, renamed to 1-based
+    img1/%06d.png    symlinks into raw/<split>/images/<seq>, renamed to 1-based
     gt/gt.txt        frame, track_id, x, y, w, h, conf, class, visibility
     seqinfo.ini      MOTChallenge sequence metadata
 
@@ -104,7 +104,7 @@ def write_seqinfo(dest: Path, name: str, length: int, width: int, height: int) -
 
 def convert(seq: str, src_split: str, raw: Path, out_split_dir: Path) -> Path:
     instances = raw / "instances" / src_split / f"{seq}.txt"
-    raw_images = raw / "images" / seq
+    raw_images = raw / src_split / "images" / seq
 
     rows = parse_instances(instances)
     # Mask dimensions are per-row but constant within a sequence. The frame count

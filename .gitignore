@@ -36,6 +36,7 @@ outputs/
 # Run directories: manifest.json and metrics.json are small and tracked, so a
 # result stays reproducible from its commit. The heavy artifacts are not.
 runs/*/artifacts/
+runs/*/eval.log
 *.mp4
 *.avi
 *.mkv

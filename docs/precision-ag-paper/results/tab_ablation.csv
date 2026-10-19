@@ -1,6 +1,6 @@
 variant,lettuce0011_HOTA,lettuce0011_IDF1,orange_V01_HOTA,orange_V01_IDF1,grape_PP7_HOTA,grape_PP7_IDF1,apple0008_HOTA,apple0008_IDF1,RIP
-(a) StrongSORT,76.33,64.03,71.35,62.77,78.12,72.9,,,10.7
-(b) + landmark assoc.,,,,,,,,,
-(c) + dormancy (MapSORT),96.2,98.04,87.13,84.56,92.25,92.21,,,68.3
-(d) (c) w/o appearance,,,,,,,,,
-"(e) (c), point landmark",,,,,,,,,
+(a) StrongSORT,76.33,64.03,71.35,62.77,78.12,72.90,96.44,97.68,10.7
+(b) + landmark assoc.,78.93,68.18,72.64,64.37,89.36,87.25,96.74,98.14,16.2
+(c) + dormancy (MapSORT),92.15,91.79,87.13,84.56,91.83,91.80,96.74,98.14,64.8
+(d) (c) w/o appearance,94.01,95.22,85.14,82.52,89.56,90.01,96.72,98.13,61.3
+"(e) (c), point landmark",83.70,76.25,76.66,69.37,83.05,79.62,96.85,98.35,26.2

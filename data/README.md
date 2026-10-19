@@ -108,17 +108,22 @@ here. They go in `runs/<run_id>/artifacts/`.
 Create the `raw` symlink for each dataset:
 
 ```bash
-mkdir -p data/lettucemots/{dets,landmarks,recon}
-ln -s /path/to/LettuceMOTS data/lettucemots/raw
+mkdir -p data/lettucemots
+ln -s /path/to/LettuceMOTS data/lettucemots/raw   # the Drive folder's test/ and instances/
 ```
 
 Then build the derived views:
 
 ```bash
-python scripts/data/lettucemots_to_mot.py    # writes mot/{train,test}/<seq>/
-ln -s ../raw/colmap/0011 data/lettucemots/recon/0011
-python scripts/data/gt_to_dets.py                # writes dets/<seq>.txt from mot GT
-python scripts/landmarks/sfm_mapping.py --seq 0011 --green 0.02  # landmarks/<seq>/sfm.npz
+SEQS="0003 0007 0011"
+python scripts/data/lettucemots_to_mot.py --seqs $SEQS   # writes mot/test/<seq>/
+# recon/<seq>/: queued in config/recon_plan.yaml, run by scripts/colmap/recon_queue.py
+python scripts/data/gt_to_dets.py --dataset lettucemots --seqs $SEQS --masks   # dets/ + masks/
+for s in $SEQS; do   # filters come from config/landmark_filters.yaml
+  python scripts/landmarks/sfm_mapping.py --dataset lettucemots --seq $s
+  python scripts/landmarks/sfm_mapping.py --dataset lettucemots --seq $s --mode nearest
+done
+python scripts/reid/reid_cache.py --dataset lettucemots --seqs $SEQS
 ```
 
 The `recon/` symlink is relative, so the tree survives being moved as long as
@@ -153,43 +158,40 @@ python scripts/reid/reid_cache.py --dataset moranget --seqs $SEQS
 
 Source: <https://github.com/NanH5837/LettuceMOTS> (dataset on Google Drive).
 
-The download is not a clean dataset — it is the upstream code repo with the data
-inside it, and it has since accumulated derived outputs. Only these subpaths are
-genuine source data:
+Only the test split's frames and the instance files are downloaded from the
+Drive folder (`train/` is skipped):
 
 | Path under `raw/` | What |
 |---|---|
-| `images/<seq>/` | Frames, `%06d.png`, **0-based**. |
-| `instances/<split>/<seq>.txt` | MOTS masks — the actual ground truth. |
-| `labels/<seq>/` | YOLO detection labels, upstream train sequences only. |
+| `test/images/<seq>/` | Frames, `%06d.png`, **0-based**, 810x1080. |
+| `test/instances/<seq>/` | Per-frame instance masks, uint16, value `class * 1000 + n`. |
+| `instances/<split>/<seq>.txt` | MOTS masks (RLE), all 12 sequences — the actual ground truth. |
+| `LettuceMOTSyolo/<seq>/` | YOLO-seg labels, upstream train sequences only. |
 
-Ignore everything else in there: `segment/`, `tracking/`, `models/`, `utils/`,
-`export.py` are upstream code, and `pred_viz/`, `gt_viz/`, `comparison_viz/`,
-`eval_results/` are another project's outputs. `raw/mot/` is an upstream partial
-conversion covering three sequences; we generate our own, so don't read it.
-
-**Ground truth exists for all 12 sequences.** It ships as MOTS instance files,
+**Ground truth exists for all 12 sequences** as MOTS instance files,
 `frame id class height width RLE`, with 0-based frames and ids encoded as
 `class * 1000 + n`. `scripts/data/lettucemots_to_mot.py` decodes the masks to
-tight bounding boxes and writes the MOT view — its output is byte-identical to
-the three sequences converted upstream, which `--verify` checks.
+tight bounding boxes and writes the MOT view. The per-frame PNGs agree with it:
+every instance's label and box match its `gt.txt` row (9718/9718).
 
 - **Splits.** `mot/test/` holds the upstream held-out sequences — 0003, 0007,
-  0011, the long ones at 223–245 frames. That is the headline eval set.
-  `mot/train/` holds the other nine (45–117
-  frames); we never train on them, so they serve as a development set for any
-  threshold that must not be fitted on the test set.
+  0011, the long ones at 223–245 frames. That is the eval set. The nine train
+  sequences (45–117 frames) have GT but no frames on disk.
 - **GT format** (generated): `frame, track_id, x, y, w, h, conf, class,
   visibility`, 1-based frames, top-left `xywh`. `Detection.bbox` is `xyxy`, so
   convert.
-- **Reconstruction:** only 0011 has one (COLMAP, under `raw/colmap/0011`,
-  exposed as `recon/0011`), so the mapping sub-task is limited to that one
-  sequence regardless of how many have tracking GT. `landmarks/0011/sfm.npz`
-  covers 3030/3073 detections over all 223 registered frames, with a median of
-  162 keypoints behind each landmark; the remaining 43 enclose no keypoint that
-  survives the green filter. It is built with `--green 0.02` and no track filter
-  — the `.npz` records both, so check there rather than trusting this paragraph. Note the COLMAP scale is arbitrary, so distances in this file are in
-  reconstruction units, not metres.
+- **Reconstruction:** all three are our own COLMAP runs from the recon queue,
+  every frame registered, reprojection 0.85–0.98 px. 0011 is the calibration
+  source (free intrinsics on attempt 1 split into 13 models; attempt 2 held the
+  focal at ~988 px); 0003 and 0007 reuse its refined camera. The upstream 0011
+  model the old landmarks were built from is not used. COLMAP scale is arbitrary,
+  so distances are reconstruction units, not metres.
+- **Landmarks** use `--masks --mask-fallback`, chosen by the same nearest-centre
+  accuracy x coverage sweep as GrapeMOTS and AppleMOTS. The score saturates here
+  (accuracy >= 0.997 for every config), so the choice matters little; `--green
+  0.02` only cost coverage. Coverage is 3219/3304, 3247/3341 and 2973/3073
+  detections, with a median of 8, 21 and 43 kept points per landmark, far fewer
+  than the upstream model gave.
 - **Detector weights:** stock `yolov8n.pt` is COCO-trained and detects no
   lettuce. Use GT detections until crop-specific weights exist. Any detector
   fine-tuned on LettuceMOTS has seen `mot/train/`, so detector-in-the-loop

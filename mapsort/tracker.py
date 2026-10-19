@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import numpy as np
+from boxmot.reid.protocols import AppearanceEncoder
 from boxmot.reid.specs import ReIDConfig
 from boxmot.trackers.common.appearance import normalize_embedding
 from boxmot.trackers.common.association.matching import chi2inv95
@@ -68,12 +69,16 @@ class MapSort(StrongSort):
         self,
         *,
         gate: float = chi2inv95[3],
+        distance: str = "mahalanobis",
         use_appearance: bool = True,
         dormancy: dict | None = None,
         **kwargs,
     ) -> None:
         super().__init__(**kwargs)
-        self.gate = float(gate)
+        if distance not in association.DISTANCES:
+            raise ValueError(f"distance must be one of {association.DISTANCES}, got {distance!r}")
+        self.gate = float(gate)  # squared Mahalanobis, or map units when distance is euclidean
+        self.distance = distance
         self.use_appearance = bool(use_appearance)
         dormancy = dormancy or {}
         self.dormancy = bool(dormancy.get("enabled", True))
@@ -95,6 +100,7 @@ class MapSort(StrongSort):
             [tracks[int(index)].landmark for index in track_indices],
             [self._observation(detections[int(index)]) for index in detection_indices],
             INFTY_COST,
+            self.distance,
         )
 
     def _appearance_cost(self, tracks, detections, track_indices, detection_indices) -> np.ndarray:
@@ -261,14 +267,15 @@ class Tracker:
     def __init__(
         self,
         strongsort: dict | None = None,
-        reid: dict | None = None,
+        reid: dict | AppearanceEncoder | None = None,
         landmarks: dict | None = None,
     ) -> None:
         landmarks = dict(landmarks or {})
         enabled = bool(landmarks.pop("enabled", False))
         kwargs = {
             "config": StrongSortConfig(**(strongsort or {})),
-            "reid": ReIDConfig(**(reid or {})),
+            # An encoder object, e.g. one serving cached embeddings, is used as is.
+            "reid": ReIDConfig(**(reid or {})) if reid is None or isinstance(reid, dict) else reid,
         }
         self.tracker = MapSort(**kwargs, **landmarks) if enabled else StrongSort(**kwargs)
         self.tracks: list[Track] = []

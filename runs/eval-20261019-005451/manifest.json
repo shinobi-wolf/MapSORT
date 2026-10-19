@@ -1,0 +1,85 @@
+{
+  "config": {
+    "eval": {
+      "data": {
+        "config": "config/datasets.yaml"
+      },
+      "metrics": {
+        "count_error": {
+          "report": [
+            "CE"
+          ]
+        },
+        "revisit": {
+          "gap_bins": [
+            10,
+            30,
+            60,
+            120
+          ],
+          "grace": 5,
+          "min_gap": 10,
+          "report": [
+            "RIP"
+          ]
+        },
+        "tracking": {
+          "backend": "trackeval",
+          "do_preproc": false,
+          "iou_threshold": 0.5,
+          "report": [
+            "HOTA",
+            "AssA",
+            "DetA",
+            "MOTA",
+            "IDF1",
+            "IDSW"
+          ]
+        }
+      },
+      "models": {
+        "botsort": {
+          "hp": {},
+          "impl": "boxmot"
+        },
+        "mapsort": {
+          "hp": {
+            "landmarks": {
+              "gate": 200
+            }
+          },
+          "impl": "mapsort"
+        },
+        "sam2mot": {
+          "hp": {
+            "segmentor": {
+              "artifact": "sam2.1_l.pt",
+              "backend": "sam"
+            }
+          },
+          "impl": "boxmot-v25.0.0"
+        },
+        "strongsort": {
+          "hp": {},
+          "impl": "boxmot"
+        }
+      }
+    },
+    "tables": [
+      "main",
+      "sequences",
+      "ablation",
+      "gate",
+      "gap",
+      "runtime"
+    ]
+  },
+  "created": "2026-10-19T00:54:51.347043+00:00",
+  "git": {
+    "branch": "dev",
+    "commit": "5bfe71dbb6a4ce5653df83530a70bca4f902b77d",
+    "dirty": true
+  },
+  "module": "eval",
+  "run_id": "eval-20261019-005451"
+}
