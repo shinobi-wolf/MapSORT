@@ -330,7 +330,7 @@ Every tracker receives the same detections, produced by a YOLO detector \citep{j
 
 \subsection{Baselines}\label{sec:baselines}
 
-MapSORT is compared with BoT-SORT \citep{aharon2022botsort}, SAM2MOT \citep{jiang2025sam2mot} and StrongSORT \citep{du2023strongsort}, which together represent the strongest current approaches to the problem: fused motion and appearance association with camera-motion compensation, segmentation-propagation tracking, and cascaded appearance and motion association. All three are run from BoxMOT \citep{brostrom2024boxmot} with their default configurations and with the same detections as MapSORT. The appearance-based trackers share one re-identification model per dataset: OSNet-x0.25 \citep{zhou2019osnet}, initialised from MSMT17 and fine-tuned on object identities from \tbd{}. StrongSORT is also MapSORT's base tracker and shares all of its non-landmark hyperparameters, so comparing the two isolates the effect of the landmark cue.
+MapSORT is compared with BoT-SORT \citep{aharon2022botsort}, SAM2MOT \citep{jiang2025sam2mot} and StrongSORT \citep{du2023strongsort}, which together represent the strongest current approaches to the problem: fused motion and appearance association with camera-motion compensation, segmentation-propagation tracking, and cascaded appearance and motion association. All three are run from BoxMOT \citep{brostrom2024boxmot} with their default configurations and with the same detections as MapSORT. The appearance-based trackers share one re-identification model per dataset: OSNet-x0.25 \citep{zhou2019osnet}, initialised from MSMT17 and fine-tuned on object identities from \tbd{}. BoT-SORT is also MapSORT's base tracker and shares all of its non-landmark hyperparameters, so comparing the two isolates the effect of the landmark cue.
 
 \subsection{Evaluation metrics}\label{sec:metrics}
 
@@ -350,7 +350,7 @@ Because the per-frame assignment is CLEAR's own, every revisit switch is one of 
 
 \subsection{Implementation details}\label{sec:impl}
 
-Table~\ref{tab:hparams} lists MapSORT's settings, which are identical across datasets except for the landmark point filters. The appearance and motion stages use StrongSORT's settings unchanged. Experiments ran on two machines: a laptop with an Intel Core i9-14900HX CPU and an NVIDIA GeForce RTX~4070 Laptop GPU (8\,GB), and, for the high-resolution GrapeMOTS and AppleMOTS sequences, a workstation with an Intel Xeon E3-1240~v5 CPU (4 cores, 8 threads, 3.5\,GHz) and no GPU.
+Table~\ref{tab:hparams} lists MapSORT's settings, which are identical across datasets except for the landmark point filters. The appearance and motion stages use BoT-SORT's BoxMOT defaults unchanged. Experiments ran on two machines: a laptop with an Intel Core i9-14900HX CPU and an NVIDIA GeForce RTX~4070 Laptop GPU (8\,GB), and, for the high-resolution GrapeMOTS and AppleMOTS sequences, a workstation with an Intel Xeon E3-1240~v5 CPU (4 cores, 8 threads, 3.5\,GHz) and no GPU.
 
 \begin{table}[t]
 \caption{MapSORT settings.}\label{tab:hparams}
@@ -382,7 +382,10 @@ Component & Parameter & Value \\
  & Max.\ age $A_{\max}$ & 30 frames \\
  & Max.\ IoU distance & 0.7 \\
 \midrule
-\multirow{2}{*}{Landmark association} & Gate $\tau$ & 200 \\
+\multirow{5}{*}{Landmark association} & Gate $\tau$ (3D fallback) & 200 \\
+ & Reprojection revival gate & 1.0 box size \\
+ & Camera RANSAC: iterations, inlier, min.\ inliers & 300, 0.5 box size, 8 \\
+ & Map motion: min.\ offsets, max.\ residual, EMA & 2, 0.3 box size, 0.3 \\
  & Dormant pool size & Unbounded \\
 \midrule
 \multirow{3}{*}{Evaluation} & IoU threshold & 0.5 \\
@@ -397,8 +400,8 @@ Component & Parameter & Value \\
 
 \subsection{Comparison with state-of-the-art trackers}\label{sec:res-main}
 
-Table~\ref{tab:main} compares MapSORT with the three baselines on all four datasets. MapSORT achieves the highest HOTA, AssA and IDF1 on every dataset. % TODO confirm once all runs are complete
-The gains concentrate in association: DetA, which reflects localisation and is shared by all trackers given the same detections, moves little, while AssA rises by \tbd{} points on average over the strongest baseline. On the datasets with revisits, MapSORT preserves identity in \tbd{}\% of revisit events, against \tbd{}\% for the best baseline. Count error falls from \tbd{}\% to \tbd{}\% on average, which translates directly into more accurate yield estimates. On AppleMOTS, where objects are never out of view for long, the landmark stage still improves association among dense clusters of near-identical apples (HOTA \tbd{} vs.\ \tbd{}).
+Table~\ref{tab:main} compares MapSORT with the three baselines on all four datasets. MapSORT achieves the highest HOTA, AssA and IDF1 on \tbd{} of the four datasets. % TODO MapSORT rows need the revised tracker on the full test splits
+The gains concentrate in association: DetA, which reflects localisation and is shared by all trackers given the same detections, moves little, while AssA rises by \tbd{} points on average over the strongest baseline. On the datasets with revisits, MapSORT preserves identity in \tbd{}\% of revisit events, against \tbd{}\% for the best baseline. Count error falls from \tbd{}\% to \tbd{}\% on average, which translates directly into more accurate yield estimates. On AppleMOTS, where objects are never out of view for long, MapSORT should match its BoT-SORT base (HOTA \tbd{} vs.\ \tbd{}).
 
 \begin{table}[t]
 \caption{Tracking results. CE: count error (\%). RIP: revisit identity preservation rate (\%); AppleMOTS has no revisit events. Best per dataset in bold.}\label{tab:main}
@@ -409,24 +412,24 @@ The gains concentrate in association: DetA, which reflects localisation and is s
 Dataset & Tracker & HOTA$\uparrow$ & AssA$\uparrow$ & DetA$\uparrow$ & MOTA$\uparrow$ & IDF1$\uparrow$ & IDSW$\downarrow$ & CE$\downarrow$ & RIP$\uparrow$ \\
 \midrule
 \multirow{4}{*}{LettuceMOTS} & BoT-SORT & 77.65 & 62.92 & 95.83 & 95.02 & 64.90 & 79 & +67.5 & 1.4 \\
- & SAM2MOT & 74.43 & 56.31 & \textbf{98.37} & 93.30 & 59.78 & 493 & +307.9 & 7.1 \\
+ & SAM2MOT & 74.43 & 56.31 & 98.37 & 93.30 & 59.78 & 493 & +307.9 & 7.1 \\
  & StrongSORT & 69.97 & 52.90 & 92.54 & 90.82 & 57.41 & 167 & +107.0 & 2.9 \\
- & MapSORT & \textbf{93.81} & \textbf{92.28} & 95.37 & \textbf{95.29} & \textbf{94.56} & \textbf{8} & \textbf{+3.5} & \textbf{91.4} \\
+ & MapSORT & \tbd & \tbd & \tbd & \tbd & \tbd & \tbd & \tbd & \tbd \\
 \midrule
-\multirow{4}{*}{MOrangeT} & BoT-SORT & 76.97 & 60.28 & 98.28 & \textbf{97.44} & 66.93 & 861 & +84.6 & 9.9 \\
- & SAM2MOT & 69.72 & 49.04 & \textbf{99.11} & 94.33 & 57.89 & 4997 & +423.3 & 0.3 \\
+\multirow{4}{*}{MOrangeT} & BoT-SORT & 76.97 & 60.28 & 98.28 & 97.44 & 66.93 & 861 & +84.6 & 9.9 \\
+ & SAM2MOT & 69.72 & 49.04 & 99.11 & 94.33 & 57.89 & 4997 & +423.3 & 0.3 \\
  & StrongSORT & 75.77 & 59.69 & 96.18 & 95.25 & 67.08 & 964 & +82.2 & 13.6 \\
- & MapSORT & \textbf{91.78} & \textbf{86.43} & 97.46 & 97.23 & \textbf{90.77} & \textbf{353} & \textbf{+14.4} & \textbf{74.0} \\
+ & MapSORT & \tbd & \tbd & \tbd & \tbd & \tbd & \tbd & \tbd & \tbd \\
 \midrule
-\multirow{4}{*}{GrapeMOTS} & BoT-SORT & 92.38 & 86.29 & \textbf{98.90} & \textbf{98.61} & 89.99 & \textbf{82} & +30.1 & 0.0 \\
+\multirow{4}{*}{GrapeMOTS} & BoT-SORT & 92.38 & 86.29 & 98.90 & 98.61 & 89.99 & 82 & +30.1 & 0.0 \\
  & SAM2MOT & 66.78 & 46.64 & 95.64 & 79.84 & 58.29 & 4005 & +1536.7 & 0.0 \\
  & StrongSORT & 87.44 & 79.01 & 96.76 & 95.79 & 84.87 & 259 & +65.3 & 0.0 \\
- & MapSORT & \textbf{92.44} & \textbf{87.22} & 97.98 & 97.64 & \textbf{91.92} & 132 & \textbf{-0.5} & \textbf{26.1} \\
+ & MapSORT & \tbd & \tbd & \tbd & \tbd & \tbd & \tbd & \tbd & \tbd \\
 \midrule
-\multirow{4}{*}{AppleMOTS} & BoT-SORT & \textbf{94.07} & \textbf{92.97} & \textbf{95.17} & \textbf{94.69} & \textbf{95.27} & \textbf{132} & \textbf{+2.0} & n/a \\
+\multirow{4}{*}{AppleMOTS} & BoT-SORT & 94.07 & 92.97 & 95.17 & 94.69 & 95.27 & 132 & +2.0 & n/a \\
  & SAM2MOT & 63.12 & 43.30 & 92.02 & 56.01 & 50.33 & 9918 & +559.0 & n/a \\
  & StrongSORT & 77.81 & 77.12 & 78.50 & 75.90 & 78.40 & 717 & +8.3 & n/a \\
- & MapSORT & 80.84 & 78.87 & 82.85 & 80.02 & 81.19 & 782 & -7.4 & n/a \\
+ & MapSORT & \tbd & \tbd & \tbd & \tbd & \tbd & \tbd & \tbd & \tbd \\
 \botrule
 \end{tabular*}
 \end{table}
@@ -435,11 +438,11 @@ Dataset & Tracker & HOTA$\uparrow$ & AssA$\uparrow$ & DetA$\uparrow$ & MOTA$\upa
 
 One representative sequence per dataset is used for the detailed analyses that follow: LettuceMOTS 0011, MOrangeT V01, GrapeMOTS PathPlanning\_7 and AppleMOTS 0008. Table~\ref{tab:seq} reports all trackers on these sequences.
 
-On LettuceMOTS 0011 the robot drives out along two rows and returns, so each of the 37 plants is seen twice. StrongSORT issues 60 identities and switches identity at every one of the 22 revisit events. MapSORT tracks all 37 plants with a single identity each: zero identity switches, all 22 revisits preserved, IDF1 98.0 and HOTA 96.2, an improvement of 19.9 HOTA and 34.0 IDF1 points. The plant count is exact.
+On LettuceMOTS 0011 the robot drives out along two rows and returns, so each of the 37 plants is seen twice. StrongSORT issues 60 identities and switches identity at every one of the 22 revisit events. MapSORT preserves \tbd{} of the 22 revisits, with HOTA \tbd{} and IDF1 \tbd{}.
 
-On MOrangeT V01, a handheld sweep around an orange tree with 104 revisit events, MapSORT raises HOTA from 71.4 to 87.1 and IDF1 from 62.8 to 84.6, more than halves identity switches (129 to 70), and preserves identity in 69.0\% of revisits against 15.8\%. The count error falls from +101.8\% to +41.8\%. This holds although the oranges' landmarks rest on few points (a median of two per detection, Table~\ref{tab:recon}), which shows that the fused landmark accumulates usable precision from sparse support.
+On MOrangeT V01, a handheld sweep around an orange tree with 104 revisit events, MapSORT raises HOTA from 74.4 to 97.1 and IDF1 from 64.0 to 97.1 over its BoT-SORT base, cuts identity switches from 105 to 16, and preserves identity in 90.3\% of revisits, against 15.8\% for the best baseline. The count error falls from +93.6\% to +9.1\%. This holds although the oranges' landmarks rest on few points (a median of two per detection, Table~\ref{tab:recon}): the camera is fitted to many landmarks at once, so a poorly supported landmark still projects close to its object.
 
-On GrapeMOTS PathPlanning\_7, where the UAV views the vines from several perspectives, MapSORT raises HOTA from 78.1 to 92.3 and IDF1 from 72.9 to 92.2, halves identity switches (125 to 56), and reduces count error from +123.1\% to +41.5\%. StrongSORT preserves none of the 23 revisits; MapSORT preserves 8.
+On GrapeMOTS PathPlanning\_7, where the UAV views the vines from several perspectives, MapSORT raises HOTA from 89.6 to 98.0 and IDF1 from 85.5 to 97.9 over BoT-SORT, cuts identity switches from 34 to 8, and brings the count error from +43.1\% to 0.0\%. No baseline preserves any of the 23 revisits; MapSORT preserves 20. On AppleMOTS 0008, which has no revisits and on which BoT-SORT already makes a single identity switch, MapSORT matches BoT-SORT (HOTA 98.80 vs.\ 98.79).
 
 \begin{table}[t]
 \caption{Results on the representative sequences. Columns as in Table~\ref{tab:main}. AppleMOTS 0008 has no revisit events.}\label{tab:seq}
@@ -450,31 +453,31 @@ On GrapeMOTS PathPlanning\_7, where the UAV views the vines from several perspec
 Sequence & Tracker & HOTA$\uparrow$ & AssA$\uparrow$ & DetA$\uparrow$ & MOTA$\uparrow$ & IDF1$\uparrow$ & IDSW$\downarrow$ & CE$\downarrow$ & RIP$\uparrow$ \\
 \midrule
 \multirow{4}{*}{\shortstack[l]{LettuceMOTS\\0011}} & BoT-SORT & 77.88 & 63.23 & 95.93 & 95.15 & 64.91 & 24 & +64.9 & 0.0 \\
- & SAM2MOT & 82.72 & 69.13 & \textbf{98.99} & \textbf{96.94} & 70.84 & 63 & +108.1 & 4.5 \\
+ & SAM2MOT & 82.72 & 69.13 & 98.99 & 96.94 & 70.84 & 63 & +108.1 & 4.5 \\
  & StrongSORT & 76.33 & 62.17 & 93.72 & 92.97 & 64.03 & 23 & +62.2 & 0.0 \\
- & MapSORT & \textbf{92.15} & \textbf{89.00} & 95.41 & 95.31 & \textbf{91.79} & \textbf{3} & \textbf{+5.4} & \textbf{86.4} \\
+ & MapSORT & \tbd & \tbd & \tbd & \tbd & \tbd & \tbd & \tbd & \tbd \\
 \midrule
-\multirow{4}{*}{\shortstack[l]{MOrangeT\\V01}} & BoT-SORT & 74.39 & 56.94 & \textbf{97.18} & \textbf{95.85} & 64.03 & 105 & +93.6 & 10.0 \\
+\multirow{4}{*}{\shortstack[l]{MOrangeT\\V01}} & BoT-SORT & 74.39 & 56.94 & 97.18 & 95.85 & 64.03 & 105 & +93.6 & 10.0 \\
  & SAM2MOT & 34.08 & 12.18 & 95.35 & 63.76 & 21.30 & 2479 & +1966.4 & 0.0 \\
  & StrongSORT & 71.35 & 54.42 & 93.57 & 91.92 & 62.77 & 129 & +101.8 & 15.8 \\
- & MapSORT & \textbf{87.13} & \textbf{79.61} & 95.36 & 94.47 & \textbf{84.56} & \textbf{70} & \textbf{+41.8} & \textbf{69.0} \\
+ & MapSORT & \textbf{97.07} & \textbf{95.74} & \textbf{98.43} & \textbf{98.23} & \textbf{97.08} & \textbf{16} & \textbf{+9.1} & \textbf{90.3} \\
 \midrule
-\multirow{4}{*}{\shortstack[l]{GrapeMOTS\\PathPlanning\_7}} & BoT-SORT & 89.60 & 80.92 & \textbf{99.21} & \textbf{98.86} & 85.48 & \textbf{34} & +43.1 & 0.0 \\
+\multirow{4}{*}{\shortstack[l]{GrapeMOTS\\PathPlanning\_7}} & BoT-SORT & 89.60 & 80.92 & 99.21 & 98.86 & 85.48 & 34 & +43.1 & 0.0 \\
  & SAM2MOT & 58.58 & 36.37 & 94.36 & 78.99 & 50.29 & 1409 & +1573.8 & 0.0 \\
  & StrongSORT & 78.12 & 63.43 & 96.22 & 94.95 & 72.90 & 125 & +123.1 & 0.0 \\
- & MapSORT & \textbf{91.83} & \textbf{86.62} & 97.36 & 96.99 & \textbf{91.80} & 67 & \textbf{+41.5} & \textbf{26.1} \\
+ & MapSORT & \textbf{97.97} & \textbf{96.36} & \textbf{99.62} & \textbf{99.57} & \textbf{97.89} & \textbf{8} & \textbf{0.0} & \textbf{87.0} \\
 \midrule
-\multirow{4}{*}{\shortstack[l]{AppleMOTS\\0008}} & BoT-SORT & \textbf{98.79} & \textbf{98.80} & 98.78 & \textbf{98.77} & \textbf{99.37} & \textbf{1} & \textbf{0.0} & n/a \\
+\multirow{4}{*}{\shortstack[l]{AppleMOTS\\0008}} & BoT-SORT & 98.79 & 98.80 & 98.78 & 98.77 & 99.37 & \textbf{1} & \textbf{0.0} & n/a \\
  & SAM2MOT & 88.72 & 79.66 & \textbf{98.81} & 81.72 & 82.11 & 1815 & +906.1 & n/a \\
  & StrongSORT & 96.44 & 96.09 & 96.80 & 96.67 & 97.68 & 14 & -0.6 & n/a \\
- & MapSORT & 96.74 & 96.63 & 96.85 & 96.83 & 98.14 & 3 & -1.8 & n/a \\
+ & MapSORT & \textbf{98.80} & \textbf{98.81} & 98.79 & \textbf{98.78} & \textbf{99.38} & \textbf{1} & \textbf{0.0} & n/a \\
 \botrule
 \end{tabular*}
 \end{table}
 
 \subsection{Identity persistence across revisits}\label{sec:res-revisit}
 
-Fig.~\ref{fig:gap} breaks revisit outcomes down by how long the object was out of view. StrongSORT preserves identity only for short absences: 62.5\% of events with a gap below 30 frames, and none at all beyond, because a track unmatched for $A_{\max}=30$ frames is deleted. MapSORT preserves identity across every absence length, at 54.8\% to 84.6\% per bin, and its preservation rate does not decline with gap length: it is 72.3\% for absences of 120 frames or more. This is the behaviour Sect.~\ref{sec:dormant} is designed to produce: the landmark of a stationary object does not age, so a dormant track is as recoverable after a long absence as after a short one.
+Fig.~\ref{fig:gap} breaks revisit outcomes down by how long the object was out of view. StrongSORT and BoT-SORT preserve identity only for short absences: 79.6\% and 57.7\% of events with a gap below 30 frames, and almost none beyond, because a track unmatched for longer than its buffer is deleted. MapSORT's rates per bin are \tbd{}; on the representative sequences it preserves 90.3\% (V01) and 87.0\% (PP\_7) of all revisits (Table~\ref{tab:seq}). % TODO MapSORT bins need the full test splits This is the behaviour Sect.~\ref{sec:dormant} is designed to produce: the landmark of a stationary object does not age, so a dormant track is as recoverable after a long absence as after a short one.
 
 \begin{figure}[t]
 \centering
@@ -494,14 +497,13 @@ Fig.~\ref{fig:gap} breaks revisit outcomes down by how long the object was out o
 \addplot[fill=black!35] coordinates {(10 to 29,79.6) (30 to 59,3.1) (60 to 119,0.4) ($\geq$120,0.0)};
 \addplot[fill=black!12, draw=black!50, dashed] coordinates {(10 to 29,57.7) (30 to 59,3.0) (60 to 119,0.0) ($\geq$120,0.0)};
 \addplot[fill=black!12, draw=black!50, dotted] coordinates {(10 to 29,4.7) (30 to 59,0.6) (60 to 119,0.0) ($\geq$120,0.0)};
-\addplot[fill=clm!75!black] coordinates {(10 to 29,89.8) (30 to 59,65.5) (60 to 119,67.1) ($\geq$120,76.2)};
 \addlegendentry{StrongSORT}
 \addlegendentry{BoT-SORT}
 \addlegendentry{SAM2MOT}
-\addlegendentry{MapSORT}
+\addlegendimage{area legend, fill=clm!75!black}\addlegendentry{MapSORT (\tbd)}
 \end{axis}
 \end{tikzpicture}
-\caption{Revisit identity preservation by length of absence, over the 149 revisit events of the representative sequences. StrongSORT deletes tracks unseen for more than 30 frames and preserves no identity beyond that horizon; MapSORT's dormant tracks keep identities recoverable at every absence length.}
+\caption{Revisit identity preservation by length of absence, over the 1043 revisit events of the test sequences. StrongSORT deletes tracks unseen for more than 30 frames and preserves no identity beyond that horizon; MapSORT's dormant tracks keep identities recoverable at every absence length.}
 \label{fig:gap}
 \end{figure}
 
@@ -527,10 +529,10 @@ Mean $|$CE$|$ (\%) & & \tbd & \tbd & \tbd & \tbd \\
 
 \subsection{Ablation study}\label{sec:res-ablation}
 
-Table~\ref{tab:ablation} isolates each component on the representative sequences, building from StrongSORT (a) to the full MapSORT (c). Adding landmark association to the active tracks (b) recovers objects that the appearance cascade misses while their tracks are still alive; adding dormant revival (c) extends recovery beyond the deletion horizon and accounts for the gains at long absences in Fig.~\ref{fig:gap}. Together they raise pooled revisit preservation from 10.7\% to 68.3\%. Removing the appearance stage (d) shows how much of MapSORT's association the landmark alone carries. Replacing the Gaussian landmark by the nearest triangulated keypoint to the box centre with a Euclidean gate (e), the point-estimate localisation of prior fruit-tracking work, quantifies the contribution of the uncertainty-aware observation model and of scale-invariant gating.
+Table~\ref{tab:ablation} isolates each component on the representative sequences, building from BoT-SORT (a) to the full MapSORT (d). Reviving lost and dormant tracks by the Mahalanobis gate on their 3D landmarks (b) raises pooled revisit preservation from 8.1\% to 61.6\%. Reviving them instead where the per-frame camera projects their landmark (c) raises it to 85.6\% and adds 3.6 to 4.0 HOTA points on V01 and PP\_7: projection removes the depth error of the landmark, which is largest along the viewing ray and is what lets adjacent fruit pass a 3D gate. Using the camera as the motion model of reliable tracks (d) brings HOTA to 97.1 and 98.0 and RIP to 89.7\%. On AppleMOTS 0008, which has no revisits, every variant ties BoT-SORT. Replacing the Gaussian landmark by the nearest triangulated keypoint to the box centre with a Euclidean gate (e), the point-estimate localisation of prior fruit-tracking work, changes HOTA by less than half a point in either direction: once association runs through the camera, the landmark's covariance matters little.
 
 \begin{table}[t]
-\caption{Ablation on the representative sequences (HOTA / IDF1). RIP is pooled over the revisit events of all four sequences. (e) uses the nearest SfM keypoint to the box centre as a point landmark with a Euclidean distance gate.}\label{tab:ablation}
+\caption{Ablation on the representative sequences (HOTA / IDF1). RIP is pooled over the revisit events of the sequences with results (AppleMOTS 0008 has none). (e) uses the nearest SfM keypoint to the box centre as a point landmark with a Euclidean distance gate.}\label{tab:ablation}
 \scriptsize
 \setlength{\tabcolsep}{1.6pt}
 \begin{tabular*}{\textwidth}{@{\extracolsep\fill}lrrrrrrrrr@{}}
@@ -539,18 +541,18 @@ Table~\ref{tab:ablation} isolates each component on the representative sequences
 \cmidrule(lr){2-3}\cmidrule(lr){4-5}\cmidrule(lr){6-7}\cmidrule(lr){8-9}
 Variant & HOTA & IDF1 & HOTA & IDF1 & HOTA & IDF1 & HOTA & IDF1 & RIP \\
 \midrule
-(a) StrongSORT & 76.33 & 64.03 & 71.35 & 62.77 & 78.12 & 72.90 & 96.44 & 97.68 & 10.7 \\
-(b) + landmark assoc. & 78.93 & 68.18 & 72.64 & 64.37 & 89.36 & 87.25 & 96.74 & 98.14 & 16.2 \\
-(c) + dormancy (MapSORT) & 92.15 & 91.79 & \textbf{87.13} & \textbf{84.56} & \textbf{91.83} & \textbf{91.80} & 96.74 & 98.14 & \textbf{64.8} \\
-(d) (c) w/o appearance & \textbf{94.01} & \textbf{95.22} & 85.14 & 82.52 & 89.56 & 90.01 & 96.72 & 98.13 & 61.3 \\
-(e) (c), point landmark & 83.70 & 76.25 & 76.66 & 69.37 & 83.05 & 79.62 & \textbf{96.85} & \textbf{98.35} & 26.2 \\
+(a) BoT-SORT & \tbd & \tbd & 74.39 & 64.03 & 89.60 & 85.48 & 98.79 & 99.37 & 8.1 \\
+(b) + landmark revival & \tbd & \tbd & 92.18 & 89.57 & 93.42 & 92.39 & \textbf{98.81} & \textbf{99.38} & 61.6 \\
+(c) + camera revival & \tbd & \tbd & 95.78 & 95.26 & 97.39 & 97.52 & 98.79 & 99.37 & 85.6 \\
+(d) + map motion (MapSORT) & \tbd & \tbd & 97.07 & 97.08 & \textbf{97.97} & \textbf{97.89} & 98.80 & \textbf{99.38} & 89.7 \\
+(e) (d), point landmark & \tbd & \tbd & \textbf{97.25} & \textbf{97.28} & 97.51 & 97.57 & 98.80 & \textbf{99.38} & \textbf{90.5} \\
 \botrule
 \end{tabular*}
 \end{table}
 
 \subsection{Sensitivity to the landmark gate}\label{sec:res-gate}
 
-Fig.~\ref{fig:gate} sweeps the landmark gate $\tau$ over two orders of magnitude, from the 95\% quantile of the $\chi^2_3$ distribution (7.81) to 1600. Because the gating distance is invariant to reconstruction scale (Proposition~\ref{prop:scale}), a single value serves all four datasets. HOTA and revisit preservation are stable over a broad range around the default $\tau=200$. % TODO describe the curve once the sweep is run
+Fig.~\ref{fig:gate} sweeps the landmark gate $\tau$ over two orders of magnitude, from the 95\% quantile of the $\chi^2_3$ distribution (7.81) to 1600. In MapSORT $\tau$ only gates the 3D landmark correspondences that seed the camera fit and the revival of tracks in frames where no camera is found; association itself runs on reprojection. HOTA varies by less than 0.3 points over the whole range on all three sequences. On PP\_7, revisit preservation is 95.7\% for $\tau\le50$ and 87.0\% for $\tau\ge100$, so the default $\tau=200$ is conservative; we keep it rather than tune on the test sequences.
 
 \begin{figure}[t]
 \centering
@@ -565,11 +567,11 @@ Fig.~\ref{fig:gate} sweeps the landmark gate $\tau$ over two orders of magnitude
   legend to name=gatelegend, legend columns=4, legend style={draw=none, font=\scriptsize, /tikz/every even column/.append style={column sep=6pt}}]
 \draw[dashed, black!45] (axis cs:7.81,50) -- (axis cs:7.81,100);
 % TODO fill the sweep; each series is one representative sequence
-\addplot[clm!75!black, mark=*] coordinates {(7.81,83.19) (25,88.75) (50,91.03) (100,92.15) (200,92.15) (400,92.15) (800,92.15) (1600,92.10)};
-\addplot[capp, mark=square*] coordinates {(7.81,81.82) (25,84.16) (50,85.31) (100,86.44) (200,87.13) (400,86.87) (800,84.62) (1600,80.13)};
-\addplot[cmap, mark=triangle*] coordinates {(7.81,85.07) (25,89.89) (50,90.74) (100,91.48) (200,91.83) (400,90.38) (800,88.08) (1600,88.05)};
-\addplot[black!60, mark=diamond*] coordinates {(7.81,96.85) (25,96.86) (50,96.87) (100,96.83) (200,96.74) (400,96.57) (800,96.40) (1600,95.93)};
-\legend{Lettuce 0011, Orange V01, Grape PP\_7, Apple 0008}
+\addlegendimage{clm!75!black, mark=*}
+\addplot[capp, mark=square*] coordinates {(7.81,97.21) (25,97.21) (50,97.21) (100,97.07) (200,97.07) (400,97.07) (800,97.07) (1600,97.07)};
+\addplot[cmap, mark=triangle*] coordinates {(7.81,97.75) (25,98.03) (50,98.03) (100,97.97) (200,97.97) (400,97.97) (800,97.97) (1600,97.97)};
+\addplot[black!60, mark=diamond*] coordinates {(7.81,98.80) (25,98.80) (50,98.80) (100,98.80) (200,98.80) (400,98.80) (800,98.80) (1600,98.80)};
+\legend{Lettuce 0011 (\tbd), Orange V01, Grape PP\_7, Apple 0008}
 \end{axis}
 \end{tikzpicture}\hfill
 \begin{tikzpicture}
@@ -580,13 +582,12 @@ Fig.~\ref{fig:gate} sweeps the landmark gate $\tau$ over two orders of magnitude
   tick label style={font=\scriptsize}, label style={font=\footnotesize},
   ymajorgrids, grid style={black!12}, mark size=1.8pt, ymin=0, ymax=105, ylabel={RIP (\%)}]
 \draw[dashed, black!45] (axis cs:7.81,0) -- (axis cs:7.81,105) node[pos=0.08, right, font=\tiny, black!60] {$\chi^2_3(0.95)$};
-\addplot[clm!75!black, mark=*] coordinates {(7.81,31.80) (25,63.60) (50,77.30) (100,86.40) (200,86.40) (400,86.40) (800,86.40) (1600,81.80)};
-\addplot[capp, mark=square*] coordinates {(7.81,52.10) (25,61.90) (50,65.70) (100,68.00) (200,69.00) (400,69.00) (800,60.00) (1600,52.00)};
-\addplot[cmap, mark=triangle*] coordinates {(7.81,0.00) (25,13.00) (50,21.70) (100,30.40) (200,26.10) (400,26.10) (800,26.10) (1600,26.10)};
+\addplot[capp, mark=square*] coordinates {(7.81,91.30) (25,91.30) (50,91.30) (100,90.30) (200,90.30) (400,90.30) (800,90.30) (1600,90.30)};
+\addplot[cmap, mark=triangle*] coordinates {(7.81,95.70) (25,95.70) (50,95.70) (100,87.00) (200,87.00) (400,87.00) (800,87.00) (1600,87.00)};
 \end{axis}
 \end{tikzpicture}\\[2pt]
 \pgfplotslegendfromname{gatelegend}
-\caption{Sensitivity of HOTA (left) and revisit identity preservation (right) to the landmark gate $\tau$ on the representative sequences. The dashed line marks the $\chi^2_3$ 95\% quantile. AppleMOTS 0008 has no revisit events and appears only on the left.}
+\caption{Sensitivity of HOTA (left) and revisit identity preservation (right) to the landmark gate $\tau$ on the representative sequences. The dashed line marks the $\chi^2_3$ 95\% quantile. AppleMOTS 0008 has no revisit events and appears only on the left. LettuceMOTS 0011 is pending.}
 \label{fig:gate}
 \end{figure}
 
@@ -617,7 +618,7 @@ AppleMOTS 0008 & \tbd & \tbd & \tbd & \tbd & \tbd & \tbd & \tbd \\
 \label{fig:recon}
 \end{figure}
 
-Table~\ref{tab:runtime} reports tracking throughput. MapSORT runs at the same throughput as StrongSORT on MOrangeT and GrapeMOTS, and at about 80\% of it on LettuceMOTS: landmark association and fusion operate on $3\times3$ matrices and add little to a frame's cost, which is dominated by appearance embedding. The map is built once per sequence, before tracking.
+Table~\ref{tab:runtime} reports tracking throughput. MapSORT's throughput is \tbd{}. Its per-frame camera fit is a RANSAC over a few hundred landmark correspondences and landmark fusion operates on $3\times3$ matrices, both small next to appearance embedding. The map is built once per sequence, before tracking.
 
 \begin{table}[t]
 \caption{Tracking throughput (frames per second, including image decoding, detection and appearance embedding; excluding map construction). Hardware: L, laptop with RTX~4070 Laptop GPU; W, CPU-only workstation (Sect.~\ref{sec:impl}).}\label{tab:runtime}
@@ -626,10 +627,10 @@ Table~\ref{tab:runtime} reports tracking throughput. MapSORT runs at the same th
 \toprule
 Sequence & Hardware & BoT-SORT & SAM2MOT & StrongSORT & MapSORT \\
 \midrule
-LettuceMOTS 0011 & W & 4.22 & 2.54 & 3.75 & 4.17 \\
-MOrangeT V01 & W & 2.03 & 0.11 & 1.87 & 1.82 \\
-GrapeMOTS PP\_7 & W & 0.90 & 0.01 & 0.83 & 0.83 \\
-AppleMOTS 0008 & W & 1.48 & 0.16 & 1.42 & 1.40 \\
+LettuceMOTS 0011 & W & 4.22 & 2.54 & 3.75 & \tbd \\
+MOrangeT V01 & W & 2.03 & 0.11 & 1.87 & \tbd \\
+GrapeMOTS PP\_7 & W & 0.90 & 0.01 & 0.83 & \tbd \\
+AppleMOTS 0008 & W & 1.48 & 0.16 & 1.42 & \tbd \\
 \botrule
 \end{tabular*}
 \end{table}

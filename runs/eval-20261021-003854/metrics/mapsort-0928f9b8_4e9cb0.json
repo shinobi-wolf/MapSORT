@@ -1,0 +1,167 @@
+{
+  "revisit": {
+    "combined": {
+      "revisit_events": 0,
+      "revisit_id_preservation": NaN,
+      "revisit_mean_gap": NaN,
+      "revisit_preserved": 0,
+      "revisit_switches": 0,
+      "revisit_unmatched": 0
+    },
+    "config": {
+      "grace": 5,
+      "min_gap": 10,
+      "threshold": 0.5,
+      "window": 0
+    },
+    "events": {
+      "0008": []
+    },
+    "per_sequence": {
+      "0008": {
+        "revisit_events": 0,
+        "revisit_id_preservation": NaN,
+        "revisit_mean_gap": NaN,
+        "revisit_preserved": 0,
+        "revisit_switches": 0,
+        "revisit_unmatched": 0
+      }
+    },
+    "restricted": null
+  },
+  "sequences": [
+    "applemots/0008"
+  ],
+  "spec": {
+    "hp": {
+      "landmarks": {
+        "enabled": false,
+        "gate": 200,
+        "reprojection": 1.0
+      }
+    },
+    "impl": "mapsort",
+    "live": false,
+    "source": "sfm",
+    "tracker": "mapsort"
+  },
+  "timing": {
+    "0008": {
+      "frames": 322,
+      "seconds": 74.74038156000097
+    }
+  },
+  "tracking": {
+    "combined": {
+      "AssA": 98.80429810018339,
+      "AssPr": 100.0,
+      "AssRe": 98.80429810018339,
+      "CLR_F1": 99.38406140434,
+      "CLR_FN": 130,
+      "CLR_FP": 0,
+      "CLR_Frames": 322,
+      "CLR_Pr": 100.0,
+      "CLR_Re": 98.77566396684875,
+      "CLR_TP": 10488,
+      "DetA": 98.77566396684874,
+      "DetPr": 100.0,
+      "DetRe": 98.77566396684874,
+      "Dets": 10488,
+      "FP_per_frame": 0.0,
+      "Frag": 2,
+      "GT_Dets": 10618,
+      "GT_IDs": 164,
+      "HOTA": 98.7899799960708,
+      "HOTA(0)": 98.7899799960708,
+      "HOTALocA(0)": 98.7899799960708,
+      "HOTA_FN": 2470,
+      "HOTA_FP": 0,
+      "HOTA_TP": 199272,
+      "IDF1": 99.37458542594523,
+      "IDFN": 131,
+      "IDFP": 1,
+      "IDP": 99.99046529366895,
+      "IDR": 98.76624599736297,
+      "IDSW": 1,
+      "IDTP": 10487,
+      "IDs": 164,
+      "LocA": 100.0,
+      "LocA(0)": 100.0,
+      "ML": 1,
+      "MLR": 0.6097560975609756,
+      "MODA": 98.77566396684875,
+      "MOTA": 98.76624599736297,
+      "MOTAL": 98.77566396684875,
+      "MOTP": 100.0,
+      "MOTP_sum": 10488.0,
+      "MT": 158,
+      "MTR": 96.34146341463415,
+      "OWTA": 98.7899799960708,
+      "PT": 5,
+      "PTR": 3.048780487804878,
+      "sMOTA": 98.76624599736297
+    },
+    "config": {
+      "do_preproc": false,
+      "engine": "trackeval 1.3.0",
+      "primary_threshold": 0.5,
+      "sequences": [
+        "applemots/test/0008"
+      ],
+      "thresholds": [
+        0.5
+      ]
+    },
+    "per_sequence": {
+      "0008": {
+        "AssA": 98.80429810018339,
+        "AssPr": 100.0,
+        "AssRe": 98.80429810018339,
+        "CLR_F1": 99.38406140434,
+        "CLR_FN": 130,
+        "CLR_FP": 0,
+        "CLR_Frames": 322,
+        "CLR_Pr": 100.0,
+        "CLR_Re": 98.77566396684875,
+        "CLR_TP": 10488,
+        "DetA": 98.77566396684874,
+        "DetPr": 100.0,
+        "DetRe": 98.77566396684874,
+        "Dets": 10488,
+        "FP_per_frame": 0.0,
+        "Frag": 2,
+        "GT_Dets": 10618,
+        "GT_IDs": 164,
+        "HOTA": 98.7899799960708,
+        "HOTA(0)": 98.7899799960708,
+        "HOTALocA(0)": 98.7899799960708,
+        "HOTA_FN": 2470,
+        "HOTA_FP": 0,
+        "HOTA_TP": 199272,
+        "IDF1": 99.37458542594523,
+        "IDFN": 131,
+        "IDFP": 1,
+        "IDP": 99.99046529366895,
+        "IDR": 98.76624599736297,
+        "IDSW": 1,
+        "IDTP": 10487,
+        "IDs": 164,
+        "LocA": 100.0,
+        "LocA(0)": 100.0,
+        "ML": 1,
+        "MLR": 0.6097560975609756,
+        "MODA": 98.77566396684875,
+        "MOTA": 98.76624599736297,
+        "MOTAL": 98.77566396684875,
+        "MOTP": 100.0,
+        "MOTP_sum": 10488.0,
+        "MT": 158,
+        "MTR": 96.34146341463415,
+        "OWTA": 98.7899799960708,
+        "PT": 5,
+        "PTR": 3.048780487804878,
+        "sMOTA": 98.76624599736297
+      }
+    }
+  }
+}
