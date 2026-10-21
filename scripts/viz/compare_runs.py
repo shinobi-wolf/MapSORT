@@ -28,6 +28,8 @@ value. `--check` re-scores the relabelled ids and prints the diff to prove it.
 Usage:
     python scripts/viz/compare_runs.py --dataset moranget --seq V01 \
         --runs runs/20261007-233206_tracker:MapSORT runs/20261007-233003_tracker:StrongSORT
+
+`--runs` also takes a tracker file directly: runs/eval-<stamp>/artifacts/<spec>/<dataset>/<seq>.txt:Title
 """
 
 from __future__ import annotations
@@ -202,7 +204,8 @@ def main() -> None:
     for spec in args.runs:
         path, _, title = spec.partition(":")
         run = Path(path)
-        artifact = run / "artifacts" / f"{args.seq}.txt"
+        # A .txt is a tracker file itself, e.g. eval.py's artifacts/<spec>/<dataset>/<seq>.txt.
+        artifact = run if run.suffix == ".txt" else run / "artifacts" / f"{args.seq}.txt"
         if not artifact.exists():
             raise SystemExit(f"no artifact for {args.seq} in {run}")
         label, frames, tally = relabel(gt_rows, read_mot(artifact), args.iou, args.dup_start)
