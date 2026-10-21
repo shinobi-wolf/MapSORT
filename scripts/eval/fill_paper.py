@@ -18,7 +18,7 @@ TEX = PAPER / "sn-article.tex"
 RESULTS = PAPER / "results"
 
 METRICS = ["HOTA", "AssA", "DetA", "MOTA", "IDF1", "IDSW", "CE", "RIP"]
-TRACKERS = ["BoT-SORT", "SAM2MOT", "StrongSORT", "MapSORT"]
+TRACKERS = ["BoT-SORT", "SAM2MOT", "MapSORT"]
 SEQ_LABELS = {  # tab_sequences / tab_runtime / fig_gate sequence -> label used in the tex rows
     "LettuceMOTS 0011": "LettuceMOTS 0011",
     "MOrangeT V01": "MOrangeT V01",
@@ -32,9 +32,8 @@ GATE_SERIES = {  # fig_gate sequence -> pgfplots style of its series
     "AppleMOTS 0008": "black!60, mark=diamond*",
 }
 GAP_STYLE = {
-    "StrongSORT": "fill=black!35",
     "MapSORT": "fill=clm!75!black",
-    "BoT-SORT": "fill=black!12, draw=black!50, dashed",
+    "BoT-SORT": "fill=black!35",
     "SAM2MOT": "fill=black!12, draw=black!50, dotted",
 }
 GAP_BINS = {"10-29": "10 to 29", "30-59": "30 to 59", "60-119": "60 to 119", ">=120": r"$\geq$120"}
@@ -95,7 +94,7 @@ def env(tex: str, label: str) -> tuple[int, int]:
 
 
 def fill_grouped(tex: str, label: str, rows: list[dict[str, str]], key: str, group_of) -> str:
-    """tab:main / tab:seq: groups of four tracker rows, each `<lead> & <tracker> & cells \\\\`."""
+    """tab:main / tab:seq: groups of one row per tracker, each `<lead> & <tracker> & cells \\\\`."""
     start, end = env(tex, label)
     block = tex[start:end]
     by_group: dict[str, dict[str, dict[str, str]]] = {}
@@ -103,7 +102,7 @@ def fill_grouped(tex: str, label: str, rows: list[dict[str, str]], key: str, gro
         by_group.setdefault(group_of(r[key]), {})[r["tracker"]] = r
     lines, group = block.split("\n"), None
     for i, line in enumerate(lines):
-        m = re.match(r"^(\\multirow\{4\}\{\*\}\{(.*)\}|\s*) & (" + "|".join(TRACKERS) + r") & .*\\\\\s*$", line)
+        m = re.match(r"^(\\multirow\{3\}\{\*\}\{(.*)\}|\s*) & (" + "|".join(TRACKERS) + r") & .*\\\\\s*$", line)
         if not m:
             continue
         if m.group(2):
@@ -169,7 +168,7 @@ def fill_gate(tex: str) -> str:
 
 def fill_gap(tex: str) -> str:
     rows = read("fig_gap.csv")
-    order = ("StrongSORT", "BoT-SORT", "SAM2MOT", "MapSORT")
+    order = ("BoT-SORT", "SAM2MOT", "MapSORT")
     present = [t for t in order if any(r["tracker"] == t for r in rows)]
     missing = [t for t in order if t not in present]
     start, end = env(tex, "fig:gap")

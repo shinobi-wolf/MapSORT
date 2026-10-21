@@ -1,0 +1,543 @@
+{
+  "revisit": {
+    "combined": {
+      "revisit_events": 23,
+      "revisit_id_preservation": 86.95652173913044,
+      "revisit_mean_gap": 57.04347826086956,
+      "revisit_preserved": 20,
+      "revisit_switches": 3,
+      "revisit_unmatched": 0
+    },
+    "config": {
+      "grace": 5,
+      "min_gap": 10,
+      "threshold": 0.5,
+      "window": 0
+    },
+    "events": {
+      "PathPlanning_1": [],
+      "PathPlanning_2": [],
+      "PathPlanning_3": [],
+      "PathPlanning_7": [
+        {
+          "frame": 84,
+          "gap": 77,
+          "gt_id": 64,
+          "id_after": 39,
+          "id_before": 39,
+          "outcome": "preserved"
+        },
+        {
+          "frame": 101,
+          "gap": 21,
+          "gt_id": 52,
+          "id_after": 32,
+          "id_before": 32,
+          "outcome": "preserved"
+        },
+        {
+          "frame": 110,
+          "gap": 32,
+          "gt_id": 53,
+          "id_after": 33,
+          "id_before": 33,
+          "outcome": "preserved"
+        },
+        {
+          "frame": 110,
+          "gap": 33,
+          "gt_id": 54,
+          "id_after": 34,
+          "id_before": 34,
+          "outcome": "preserved"
+        },
+        {
+          "frame": 113,
+          "gap": 36,
+          "gt_id": 55,
+          "id_after": 35,
+          "id_before": 35,
+          "outcome": "preserved"
+        },
+        {
+          "frame": 116,
+          "gap": 40,
+          "gt_id": 56,
+          "id_after": 36,
+          "id_before": 36,
+          "outcome": "preserved"
+        },
+        {
+          "frame": 120,
+          "gap": 44,
+          "gt_id": 57,
+          "id_after": 37,
+          "id_before": 38,
+          "outcome": "switch"
+        },
+        {
+          "frame": 120,
+          "gap": 44,
+          "gt_id": 58,
+          "id_after": 38,
+          "id_before": 37,
+          "outcome": "switch"
+        },
+        {
+          "frame": 130,
+          "gap": 56,
+          "gt_id": 59,
+          "id_after": 41,
+          "id_before": 41,
+          "outcome": "preserved"
+        },
+        {
+          "frame": 131,
+          "gap": 58,
+          "gt_id": 60,
+          "id_after": 45,
+          "id_before": 45,
+          "outcome": "preserved"
+        },
+        {
+          "frame": 135,
+          "gap": 63,
+          "gt_id": 61,
+          "id_after": 46,
+          "id_before": 46,
+          "outcome": "preserved"
+        },
+        {
+          "frame": 137,
+          "gap": 66,
+          "gt_id": 62,
+          "id_after": 47,
+          "id_before": 47,
+          "outcome": "preserved"
+        },
+        {
+          "frame": 145,
+          "gap": 76,
+          "gt_id": 63,
+          "id_after": 42,
+          "id_before": 42,
+          "outcome": "preserved"
+        },
+        {
+          "frame": 165,
+          "gap": 30,
+          "gt_id": 45,
+          "id_after": 25,
+          "id_before": 25,
+          "outcome": "preserved"
+        },
+        {
+          "frame": 220,
+          "gap": 89,
+          "gt_id": 42,
+          "id_after": 22,
+          "id_before": 22,
+          "outcome": "preserved"
+        },
+        {
+          "frame": 220,
+          "gap": 88,
+          "gt_id": 43,
+          "id_after": 23,
+          "id_before": 23,
+          "outcome": "preserved"
+        },
+        {
+          "frame": 220,
+          "gap": 99,
+          "gt_id": 44,
+          "id_after": 24,
+          "id_before": 24,
+          "outcome": "preserved"
+        },
+        {
+          "frame": 220,
+          "gap": 78,
+          "gt_id": 46,
+          "id_after": 26,
+          "id_before": 26,
+          "outcome": "preserved"
+        },
+        {
+          "frame": 220,
+          "gap": 78,
+          "gt_id": 47,
+          "id_after": 27,
+          "id_before": 27,
+          "outcome": "preserved"
+        },
+        {
+          "frame": 220,
+          "gap": 67,
+          "gt_id": 48,
+          "id_after": 28,
+          "id_before": 28,
+          "outcome": "preserved"
+        },
+        {
+          "frame": 220,
+          "gap": 67,
+          "gt_id": 49,
+          "id_after": 29,
+          "id_before": 29,
+          "outcome": "preserved"
+        },
+        {
+          "frame": 220,
+          "gap": 38,
+          "gt_id": 50,
+          "id_after": 30,
+          "id_before": 57,
+          "outcome": "switch"
+        },
+        {
+          "frame": 220,
+          "gap": 32,
+          "gt_id": 51,
+          "id_after": 31,
+          "id_before": 31,
+          "outcome": "preserved"
+        }
+      ]
+    },
+    "per_sequence": {
+      "PathPlanning_1": {
+        "revisit_events": 0,
+        "revisit_id_preservation": NaN,
+        "revisit_mean_gap": NaN,
+        "revisit_preserved": 0,
+        "revisit_switches": 0,
+        "revisit_unmatched": 0
+      },
+      "PathPlanning_2": {
+        "revisit_events": 0,
+        "revisit_id_preservation": NaN,
+        "revisit_mean_gap": NaN,
+        "revisit_preserved": 0,
+        "revisit_switches": 0,
+        "revisit_unmatched": 0
+      },
+      "PathPlanning_3": {
+        "revisit_events": 0,
+        "revisit_id_preservation": NaN,
+        "revisit_mean_gap": NaN,
+        "revisit_preserved": 0,
+        "revisit_switches": 0,
+        "revisit_unmatched": 0
+      },
+      "PathPlanning_7": {
+        "revisit_events": 23,
+        "revisit_id_preservation": 86.95652173913044,
+        "revisit_mean_gap": 57.04347826086956,
+        "revisit_preserved": 20,
+        "revisit_switches": 3,
+        "revisit_unmatched": 0
+      }
+    },
+    "restricted": null
+  },
+  "sequences": [
+    "grapemots/PathPlanning_1",
+    "grapemots/PathPlanning_2",
+    "grapemots/PathPlanning_3",
+    "grapemots/PathPlanning_7"
+  ],
+  "spec": {
+    "hp": {
+      "landmarks": {
+        "gate": 200,
+        "reprojection": 1.0
+      }
+    },
+    "impl": "mapsort",
+    "live": false,
+    "source": "sfm",
+    "tracker": "mapsort"
+  },
+  "timing": {
+    "PathPlanning_1": {
+      "frames": 927,
+      "seconds": 263.5651385730016
+    },
+    "PathPlanning_2": {
+      "frames": 209,
+      "seconds": 130.37129013600133
+    },
+    "PathPlanning_3": {
+      "frames": 400,
+      "seconds": 170.43291642999975
+    },
+    "PathPlanning_7": {
+      "frames": 225,
+      "seconds": 150.47161190000043
+    }
+  },
+  "tracking": {
+    "combined": {
+      "AssA": 93.459654963395,
+      "AssPr": 95.05265835888022,
+      "AssRe": 97.68067480277148,
+      "CLR_F1": 99.69420182679431,
+      "CLR_FN": 153,
+      "CLR_FP": 0,
+      "CLR_Frames": 1761,
+      "CLR_Pr": 100.0,
+      "CLR_Re": 99.39026820228749,
+      "CLR_TP": 24940,
+      "DetA": 99.34636596040687,
+      "DetPr": 99.9778415565779,
+      "DetRe": 99.36824486594077,
+      "Dets": 24940,
+      "FP_per_frame": 0.0,
+      "Frag": 52,
+      "GT_Dets": 25093,
+      "GT_IDs": 196,
+      "HOTA": 96.35806704413731,
+      "HOTA(0)": 96.38479172833091,
+      "HOTALocA(0)": 96.37154739590653,
+      "HOTA_FN": 3012,
+      "HOTA_FP": 105,
+      "HOTA_TP": 473755,
+      "IDF1": 96.11256570663362,
+      "IDFN": 1049,
+      "IDFP": 896,
+      "IDP": 96.4073777064956,
+      "IDR": 95.81955126927828,
+      "IDSW": 52,
+      "IDTP": 24044,
+      "IDs": 184,
+      "LocA": 99.99838322569055,
+      "LocA(0)": 99.98625889812398,
+      "ML": 0,
+      "MLR": 0.0,
+      "MODA": 99.39026820228749,
+      "MOTA": 99.1830390945682,
+      "MOTAL": 99.38342962840778,
+      "MOTP": 100.0,
+      "MOTP_sum": 24940.0,
+      "MT": 190,
+      "MTR": 96.93877551020408,
+      "OWTA": 96.3686768338154,
+      "PT": 6,
+      "PTR": 3.061224489795918,
+      "sMOTA": 99.1830390945682
+    },
+    "config": {
+      "do_preproc": false,
+      "engine": "trackeval 1.3.0",
+      "primary_threshold": 0.5,
+      "sequences": [
+        "grapemots/test/PathPlanning_1",
+        "grapemots/test/PathPlanning_2",
+        "grapemots/test/PathPlanning_3",
+        "grapemots/test/PathPlanning_7"
+      ],
+      "thresholds": [
+        0.5
+      ]
+    },
+    "per_sequence": {
+      "PathPlanning_1": {
+        "AssA": 97.14111400953351,
+        "AssPr": 99.23224137728984,
+        "AssRe": 97.49218101622745,
+        "CLR_F1": 99.61276818419675,
+        "CLR_FN": 37,
+        "CLR_FP": 0,
+        "CLR_Frames": 927,
+        "CLR_Pr": 100.0,
+        "CLR_Re": 99.22852376980818,
+        "CLR_TP": 4759,
+        "DetA": 99.19136364885442,
+        "DetPr": 99.981199057741,
+        "DetRe": 99.20986787234976,
+        "Dets": 4759,
+        "FP_per_frame": 0.0,
+        "Frag": 5,
+        "GT_Dets": 4796,
+        "GT_IDs": 29,
+        "HOTA": 98.16088611662158,
+        "HOTA(0)": 98.19377625711645,
+        "HOTALocA(0)": 98.17545012974574,
+        "HOTA_FN": 720,
+        "HOTA_FP": 17,
+        "HOTA_TP": 90404,
+        "IDF1": 98.67085295656724,
+        "IDFN": 82,
+        "IDFP": 45,
+        "IDP": 99.05442319815087,
+        "IDR": 98.29024186822352,
+        "IDSW": 10,
+        "IDTP": 4714,
+        "IDs": 31,
+        "LocA": 99.99803544978863,
+        "LocA(0)": 99.98133677299188,
+        "ML": 0,
+        "MLR": 0.0,
+        "MODA": 99.22852376980818,
+        "MOTA": 99.02001668056714,
+        "MOTAL": 99.20767306088408,
+        "MOTP": 100.0,
+        "MOTP_sum": 4759.0,
+        "MT": 29,
+        "MTR": 100.0,
+        "OWTA": 98.17004167558754,
+        "PT": 0,
+        "PTR": 0.0,
+        "sMOTA": 99.02001668056714
+      },
+      "PathPlanning_2": {
+        "AssA": 95.23852571893224,
+        "AssPr": 96.99056182206243,
+        "AssRe": 97.24111698009754,
+        "CLR_F1": 99.6265560165975,
+        "CLR_FN": 36,
+        "CLR_FP": 0,
+        "CLR_Frames": 209,
+        "CLR_Pr": 100.0,
+        "CLR_Re": 99.25589086399339,
+        "CLR_TP": 4802,
+        "DetA": 99.17355371900824,
+        "DetPr": 99.95835068721362,
+        "DetRe": 99.21455146754857,
+        "Dets": 4802,
+        "FP_per_frame": 0.0,
+        "Frag": 11,
+        "GT_Dets": 4838,
+        "GT_IDs": 45,
+        "HOTA": 97.18612579224299,
+        "HOTA(0)": 97.18612579224298,
+        "HOTALocA(0)": 97.18612579224298,
+        "HOTA_FN": 722,
+        "HOTA_FP": 38,
+        "HOTA_TP": 91200,
+        "IDF1": 97.84232365145228,
+        "IDFN": 122,
+        "IDFP": 86,
+        "IDP": 98.20907955018741,
+        "IDR": 97.47829681686648,
+        "IDSW": 15,
+        "IDTP": 4716,
+        "IDs": 42,
+        "LocA": 100.0,
+        "LocA(0)": 100.0,
+        "ML": 0,
+        "MLR": 0.0,
+        "MODA": 99.25589086399339,
+        "MOTA": 98.9458453906573,
+        "MOTAL": 99.2315814125867,
+        "MOTP": 100.0,
+        "MOTP_sum": 4802.0,
+        "MT": 40,
+        "MTR": 88.88888888888889,
+        "OWTA": 97.20621179551465,
+        "PT": 5,
+        "PTR": 11.11111111111111,
+        "sMOTA": 98.9458453906573
+      },
+      "PathPlanning_3": {
+        "AssA": 85.31190010652162,
+        "AssPr": 86.34740357368207,
+        "AssRe": 98.04415684318873,
+        "CLR_F1": 99.61840978116969,
+        "CLR_FN": 49,
+        "CLR_FP": 0,
+        "CLR_Frames": 400,
+        "CLR_Pr": 100.0,
+        "CLR_Re": 99.23972071373157,
+        "CLR_TP": 6396,
+        "DetA": 99.21369204208355,
+        "DetPr": 99.98683387643594,
+        "DetRe": 99.2266546894778,
+        "Dets": 6396,
+        "FP_per_frame": 0.0,
+        "Frag": 9,
+        "GT_Dets": 6445,
+        "GT_IDs": 57,
+        "HOTA": 92.00059013205014,
+        "HOTA(0)": 92.02422070110721,
+        "HOTALocA(0)": 92.0126094299349,
+        "HOTA_FN": 947,
+        "HOTA_FP": 16,
+        "HOTA_TP": 121508,
+        "IDF1": 90.41351919632427,
+        "IDFN": 640,
+        "IDFP": 591,
+        "IDP": 90.75984990619136,
+        "IDR": 90.06982156710627,
+        "IDSW": 19,
+        "IDTP": 5805,
+        "IDs": 46,
+        "LocA": 99.99800774340474,
+        "LocA(0)": 99.98738237489668,
+        "ML": 0,
+        "MLR": 0.0,
+        "MODA": 99.23972071373157,
+        "MOTA": 98.94491854150505,
+        "MOTAL": 99.2198796958735,
+        "MOTP": 100.0,
+        "MOTP_sum": 6396.0,
+        "MT": 56,
+        "MTR": 98.24561403508771,
+        "OWTA": 92.00660001918702,
+        "PT": 1,
+        "PTR": 1.7543859649122806,
+        "sMOTA": 98.94491854150505
+      },
+      "PathPlanning_7": {
+        "AssA": 96.36024675576387,
+        "AssPr": 98.00133037032978,
+        "AssRe": 97.75663602683522,
+        "CLR_F1": 99.82774906928933,
+        "CLR_FN": 31,
+        "CLR_FP": 0,
+        "CLR_Frames": 225,
+        "CLR_Pr": 100.0,
+        "CLR_Re": 99.65609052584868,
+        "CLR_TP": 8983,
+        "DetA": 99.61646327209,
+        "DetPr": 99.98007933113428,
+        "DetRe": 99.63623836605049,
+        "Dets": 8983,
+        "FP_per_frame": 0.0,
+        "Frag": 27,
+        "GT_Dets": 9014,
+        "GT_IDs": 65,
+        "HOTA": 97.97482830676047,
+        "HOTA(0)": 98.01470546471224,
+        "HOTALocA(0)": 97.99581229595869,
+        "HOTA_FN": 623,
+        "HOTA_FP": 34,
+        "HOTA_TP": 170643,
+        "IDF1": 97.89409346002111,
+        "IDFN": 205,
+        "IDFP": 174,
+        "IDP": 98.06300790381832,
+        "IDR": 97.72575992899934,
+        "IDSW": 8,
+        "IDTP": 8809,
+        "IDs": 65,
+        "LocA": 99.99797096303436,
+        "LocA(0)": 99.98072414882647,
+        "ML": 0,
+        "MLR": 0.0,
+        "MODA": 99.65609052584868,
+        "MOTA": 99.56733969380963,
+        "MOTAL": 99.64607177737972,
+        "MOTP": 100.0,
+        "MOTP_sum": 8983.0,
+        "MT": 65,
+        "MTR": 100.0,
+        "OWTA": 97.98455236146776,
+        "PT": 0,
+        "PTR": 0.0,
+        "sMOTA": 99.56733969380963
+      }
+    }
+  }
+}
