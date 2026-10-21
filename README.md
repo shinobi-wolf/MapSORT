@@ -1,7 +1,15 @@
-# MapSORT: Online Landmark Association for Real-Time Stationary Object Tracking
+# MapSORT: Landmark Association for Identity-Persistent Tracking of Stationary Crops and Fruit
 
-Precision agriculture needs multi-object tracking that holds identity through occlusion, visual ambiguity, and a camera that revisits the same ground twice — conditions under which appearance- and motion-based trackers like DeepSORT and StrongSORT routinely fail. MapSORT exploits the one structural fact these methods ignore: agricultural produce doesn't move. Each detection is associated not just by appearance and image-space motion but by its estimated position in a shared 3D map frame, recovered online and causally from monocular RGB by a feed-forward pointmap module — no Structure-from-Motion optimization over the full sequence, no offline pass. Where a prior point-estimate approach to this cue (nearest triangulated keypoint to the bounding-box centre, carrying no uncertainty — the classical SfM-based localization used in prior fruit-tracking work, e.g. Liu et al. 2019, Santos et al. 2024) forces a hand-tuned, scale-dependent distance threshold, MapSORT emits a *landmark observation*: a Gaussian over the object's map-frame position, carrying the uncertainty about its centre separately from the object's physical extent. Tracks fuse these observations into persistent landmarks whose centre estimate sharpens with every sighting, so association becomes a Mahalanobis gate that is invariant to the arbitrary scale of a monocular reconstruction. Because a stationary object's map-frame position is unchanged by an arbitrarily long absence, a track may also be revived after the frame-to-frame tracker would have deleted it — the regime in which appearance galleries have decayed and image-space motion prediction is worthless. We evaluate against an offline, whole-sequence-optimized SfM reconstruction as the geometry source, holding detection and appearance fixed, and report MOTA, HOTA, IDF1 and ID switches alongside a direct analysis of mapping drift and of whether the landmark covariance is calibrated, with particular attention to re-identification when the camera revisits a previously observed location. We hypothesize that a sufficiently drift-controlled online mapping module closes most of the identity-persistence gap to that offline reference while enabling real-time operation, closing the gap toward practical deployment in precision agriculture tasks — targeted spraying, selective harvesting, and yield estimation — that require tracking to run live rather than after the fact.
+Precision agriculture needs multi-object tracking that keeps one identity per plant or fruit through occlusion, visual ambiguity, and a camera that leaves an object and later returns to it. Frame-to-frame trackers such as BoT-SORT lose identity there by construction: crops look alike, and a track unmatched for more than a few dozen frames is deleted. MapSORT exploits the one structural fact these methods ignore: agricultural produce doesn't move.
 
+MapSORT is BoT-SORT plus a scene map. A structure-from-motion reconstruction of the sequence gives every detection a *landmark observation*, a Gaussian over its centre in the map frame, and every track fuses its observations into a landmark. Each frame, the pairs BoT-SORT has just matched supply landmark-to-box correspondences, and a robust resection (RANSAC, full DLT camera or a plane homography for near-coplanar scenes) recovers the frame's camera from them. With that camera every stationary object, tracked, lost or long gone, has a predicted position in the image. MapSORT uses it twice:
+
+- **Map motion:** reliable tracks that BoT-SORT's first stage left unmatched are re-matched where the camera places them.
+- **Revival:** lost tracks, and tracks kept *dormant* instead of being deleted, are revived where their landmark projects. Prediction boxes are clipped to the frame, so an object re-entering at the edge can be revived, and a new track at the edge waits a few frames for that revival before it is reported.
+
+When no camera can be fitted, revival falls back to a Mahalanobis gate on the 3D landmarks. One configuration serves every dataset. The scene map is currently built offline with COLMAP; an online mapper (CUT3R) is the planned next geometry source.
+
+On the paper's test data (LettuceMOTS, MOrangeT, GrapeMOTS, AppleMOTS; 21 sequences), MapSORT cuts identity switches from 1154 (BoT-SORT) to 217, preserves identity in 92.0% of 1043 revisit events against 9.1%, and has fewer identity switches than BoT-SORT on 19 sequences and as few on the other two. Full results: [docs/precision-ag-paper/results/](docs/precision-ag-paper/results/).
 
 ---
 
@@ -17,7 +25,15 @@ I_t ─> Detector ─> D_t ─┬─> Tracker ─> T (running tracks)
                         └─> Mapping ─> P_t (landmark observations)
 ```
 
-[mapsort/main.py](mapsort/main.py) wires the modules. `MapSORT.step(frame_idx, frame, detections=None)` advances one frame; passing `detections` bypasses the Detector (how GT boxes are fed in). `run(frames, detections)` loops `step`.
+[mapsort/main.py](mapsort/main.py) wires the modules. `MapSORT.step(frame_idx, frame, detections=None)` advances one frame; passing `detections` bypasses the Detector (how stored detections are fed in). `run(frames, detections)` loops `step`.
+
+Inside the Tracker, one frame is:
+
+1. BoT-SORT's own association (Kalman prediction with camera-motion compensation, fused IoU and appearance).
+2. Camera resection from its matches plus mutual-nearest landmark pairs.
+3. Map motion: unmatched reliable tracks re-solved at their projected position.
+4. Revival of lost and dormant tracks by clipped reprojection error (or by the 3D gate without a camera).
+5. New tracks; those at the frame edge where a revival is expected wait before confirming.
 
 ## Layout
 
@@ -25,55 +41,71 @@ I_t ─> Detector ─> D_t ─┬─> Tracker ─> T (running tracks)
 |---|---|
 | [mapsort/main.py](mapsort/main.py) | `MapSORT`: config, modules, per-frame loop. |
 | [mapsort/detector.py](mapsort/detector.py) | `Detector`: Ultralytics YOLO wrapper. |
-| [mapsort/mapping.py](mapsort/mapping.py) | `Mapping`: online landmark estimator. **Stub** — the `sfm` backend's data exists on disk but nothing reads it yet. |
-| [mapsort/tracker.py](mapsort/tracker.py) | `Tracker`: `MapSort`, boxmot `BotSort` plus camera-based landmark association and dormant revival; `landmarks.enabled: false` is plain BoT-SORT. |
-| [mapsort/camera.py](mapsort/camera.py) | Per-frame camera resection (RANSAC DLT, or a plane homography for near-coplanar landmarks) from tracked landmarks and their boxes. |
+| [mapsort/mapping.py](mapsort/mapping.py) | `Mapping`: online landmark estimator. **Stub**; landmarks are read from `landmarks/<seq>/sfm.npz` instead. |
+| [mapsort/tracker.py](mapsort/tracker.py) | `Tracker`: `MapSort`, boxmot `BotSort` plus the camera, map-motion and revival stages; `landmarks.enabled: false` is plain BoT-SORT. |
+| [mapsort/camera.py](mapsort/camera.py) | Per-frame camera resection: RANSAC over a DLT camera and a plane homography. |
+| [mapsort/association.py](mapsort/association.py) | `LandmarkState` (information-form fusion) and the Mahalanobis/Euclidean landmark cost. |
 | [mapsort/schemas.py](mapsort/schemas.py) | `Detection`, `LandmarkObservation`, `Track`. |
 | [mapsort/data.py](mapsort/data.py) | Dataset access from [config/datasets.yaml](config/datasets.yaml): `sequence(dataset, split, name)`. |
 | [mapsort/run.py](mapsort/run.py) | The `mapsort` command: run a split, `--eval` to score, `--viz` to watch. |
 | [mapsort/viz.py](mapsort/viz.py) | Track overlays and the imshow window. |
 | [mapsort/runs.py](mapsort/runs.py) | Run directories: `runs/<stamp>_<module>/`. |
 | [mapsort/eval/](mapsort/eval/) | Scores run artifacts from disk; never imports the pipeline. |
-| [config/](config/) | `mapsort.yaml`: one file, three sections -- `run` (CLI flag defaults; flags override), `pipeline` (module kwargs), `protocol` (scoring). Plus `datasets.yaml`. |
-| [scripts/data/](scripts/data/) | Builds `mot/` and `dets/` from a dataset's native annotations. |
-| [scripts/landmarks/](scripts/landmarks/) | Builds `landmarks/` — `sfm_mapping.py` extracts them from a COLMAP model. |
-| [lab/](lab/) | Scratch notebook. |
+| [config/](config/) | `mapsort.yaml` (`run` flag defaults, `pipeline` module kwargs, `protocol`), `eval.yaml` (paper evaluation), `datasets.yaml`, `landmark_filters.yaml`, `recon_plan.yaml`. |
+| [scripts/data/](scripts/data/) | Builds `mot/`, `dets/` and `masks/` from each dataset's native annotations. |
+| [scripts/colmap/](scripts/colmap/) | The reconstruction queue that builds `recon/`. |
+| [scripts/landmarks/](scripts/landmarks/) | `sfm_mapping.py` extracts landmark observations from a COLMAP model. |
+| [scripts/reid/](scripts/reid/) | `reid_cache.py` caches per-detection ReID embeddings. |
+| [scripts/eval/](scripts/eval/) | `eval.py` runs every model over the test data; `fill_paper.py` copies the result CSVs into the paper. |
+| [scripts/viz/](scripts/viz/) | `compare_runs.py`: GT and tracker panels side by side, as a video. |
+| [docs/precision-ag-paper/](docs/precision-ag-paper/) | The paper, its result CSVs and review comments. |
+| [lab/](lab/) | Scratch notebooks. |
 | [docs/problem.md](docs/problem.md) | Problem statement and evaluation protocol. |
 
 Progress is tracked in the GitHub project (MapSORT, #5).
 
 ## External dependencies
 
-Git-ignored: `boxmot/` (vendored, editable), `CUT3R/` (symlink to `../CUT3R`), `models/` (weights). Reference projects under `~/IISc/`: `MapSORT/`, `TrackEval/`.
+Git-ignored: `boxmot/` (vendored upstream master, editable install), `boxmot-v25.0.0/` (only for the SAM2MOT baseline; see [CLAUDE.md](CLAUDE.md)), `CUT3R/` (symlink to `../CUT3R`), `models/` (weights). Reference projects under `~/IISc/`: `MapSORT/`, `TrackEval/`.
 
 ## Data
 
-[data/](data/) is git-ignored except [data/README.md](data/README.md) (layout, setup on a new machine). Root is `$MAPSORT_DATA` if set, else `./data`; [config/datasets.yaml](config/datasets.yaml) lists splits and which sequences have dets, landmarks and recon.
+[data/](data/) is git-ignored except [data/README.md](data/README.md), which covers the layout, the landmark and ReID cache formats, per-dataset notes and setup on a new machine. Root is `$MAPSORT_DATA` if set, else `./data`.
 
-```
-data/<dataset>/
-  raw                      symlink -> the original download; never written to
-  mot/<split>/<seq>/       canonical MOT view: img1/, gt/gt.txt, seqinfo.ini
-  dets/<seq>.txt           detections, MOT det format
-  landmarks/<seq>/<backend>.npz  per-detection landmark observations
-  recon/<seq>/             offline SfM reconstruction (RLoc-style pseudo-GT)
-```
+| Dataset | Test sequences | Notes |
+|---|---|---|
+| LettuceMOTS | 0003, 0007, 0011 | Field robot, nadir; every plant seen twice. |
+| MOrangeT | V01, V02, V05 to V12 | Handheld sweeps of orange trees; ships COLMAP models and 3D fruit GT. |
+| GrapeMOTS | PathPlanning_1, _2, _3, _7 | UAV, multi-perspective; 4K for PP2 and PP7. |
+| AppleMOTS | 0006, 0007, 0008, 0010 | Dense apples, no revisits; 0011 and 0012 duplicate 0007 and 0008 and are excluded. |
 
-A **landmark observation** is a Gaussian over an object's map-frame position —
-mean, a covariance for the uncertainty about that centre, and a separate
-`extent` for the object's physical spread. `sfm_mapping.py` builds one per
-detection from the COLMAP model: the triangulated keypoints inside the bbox,
-minus background points rejected by camera-frame depth. Detections enclosing no
-usable point carry `has_landmark = False` and degrade to appearance-only
-association. Array schema in [data/README.md](data/README.md).
-
-LettuceMOTS: all 12 sequences have GT and stored detections, only 0011 has a reconstruction. GT is MOT (top-left `xywh`, 1-based frames); `Detection.bbox` is `xyxy`. Stock `yolov8n.pt` detects no lettuce, so use `--detections stored`. Outputs go in `runs/<run_id>/artifacts/`.
+Every test sequence has stored detections (`dets/`, currently derived from GT until per-dataset detectors are trained), a COLMAP reconstruction, `sfm` and `sfm_point` landmarks and cached OSNet embeddings. Stock `yolov8n.pt` detects no crops, so runs use `--detections stored`.
 
 ## Evaluation
 
 Metrics come from **TrackEval** (`pip install --no-deps trackeval==1.3.0`; `--no-deps` because its metadata wants numpy ≥ 2.3 and this env pins 1.26). Don't use the clone at `~/IISc/TrackEval`, which uses `np.float`.
 
-`CLEAR` gives MOTA and IDSW, `HOTA` gives HOTA and HOTA(0), `Identity` gives IDF1. Fields at the primary threshold (0.5) keep plain names, others are suffixed (`MOTA@0.25`). The protocol is frozen in the `protocol` section of [config/mapsort.yaml](config/mapsort.yaml).
+`CLEAR` gives MOTA and IDSW, `HOTA` gives HOTA, AssA and DetA, `Identity` gives IDF1, all at IoU 0.5. Two more address agricultural use:
+
+- **Count error (CE):** signed relative error of the number of identities issued, the quantity yield estimation consumes. Average |CE| per sequence rather than pooling signed CE, which cancels.
+- **Revisit identity preservation (RIP):** [mapsort/eval/revisit.py](mapsort/eval/revisit.py). A revisit event is a GT object reappearing after at least `min_gap` (10) frames out of view; it is `preserved`, `switch` or `unmatched`, read from CLEAR's own per-frame assignment within a `grace` window (5 frames) that allows for track confirmation. The switch counts are a subset of CLEAR's IDSW. RIP = preserved / (preserved + switch). AppleMOTS has no revisit events, and GrapeMOTS only in PathPlanning_7.
+
+### Paper evaluation
+
+[scripts/eval/eval.py](scripts/eval/eval.py) runs the models in [config/eval.yaml](config/eval.yaml) (BoT-SORT, SAM2MOT, MapSORT) over every test sequence and writes the paper's tables to `docs/precision-ag-paper/results/*.csv`:
+
+```bash
+python scripts/eval/eval.py                                    # all models, all tables, new run dir
+python scripts/eval/eval.py --models mapsort --tables main     # a subset
+python scripts/eval/eval.py --run runs/eval-<stamp>            # resume: finished sequences are reused
+python scripts/eval/fill_paper.py                              # CSVs -> sn-article.tex tables and plots
+```
+
+Tables: `main` (pooled per dataset), `sequences` (one representative sequence each), `ablation`, `gate` (landmark-gate sweep), `gap` (RIP by absence length, pooled over all test data; needs every dataset complete), `runtime`. A run lives in `runs/eval-<UTC stamp>/` with `manifest.json` (commit, dirty flag, config), `eval.log`, `metrics/` and `artifacts/<spec>/<dataset>/<seq>.txt`; only the manifest and metrics are committed. Identical (tracker, hp, landmark source) specs share artifacts across tables, so resuming or adding tables never re-runs a finished sequence. Run with a clean tree so the manifest pins the code.
+
+SAM2MOT runs in a subprocess from `boxmot-v25.0.0` and takes the stored instance masks in place of SAM 2. It is slow on CPU (hours on 4K GrapeMOTS); split it across processes with `--run` and `--datasets`.
+
+### Quick runs
 
 ```bash
 mapsort --split test --detections stored --eval   # run + score
@@ -81,13 +113,15 @@ python -m mapsort.eval --run runs/<run_id>                   # re-score a run
 python -m mapsort.eval --tracker-dir path/to/results         # score external output
 ```
 
-A run writes `runs/<stamp>_tracker/` with `manifest.json`, `artifacts/<seq>.txt` and, with `--eval`, `metrics.json`. `--no-save` discards everything after printing metrics. `--detections stored` reads `data/<dataset>/dets/<seq>.txt`, isolating association quality; `live` runs the Detector, which finds no lettuce yet.
+A run writes `runs/<stamp>_tracker/` with `manifest.json`, `artifacts/<seq>.txt` and, with `--eval`, `metrics.json`. `--no-save` discards everything after printing metrics.
 
 ### Watching a run
 
 ```bash
 mapsort --seqs 0011 --viz --viz-compare --no-save   # GT | prediction
 mapsort --seqs 0011 --viz-save overlay.mp4          # no display needed
+python scripts/viz/compare_runs.py --dataset moranget --seq V01 \
+    --runs runs/eval-<stamp>/artifacts/<spec>/moranget/V01.txt:MapSORT runs/eval-<stamp>/artifacts/<spec>/moranget/V01.txt:BoT-SORT
 ```
 
 - Default colours: **black** = prediction matches a GT object (one-to-one Hungarian, IoU ≥ 0.5), **red** = false positive.
@@ -104,31 +138,12 @@ mapsort --seqs 0011 --viz-save overlay.mp4          # no display needed
 | [eval/protocol.py](mapsort/eval/protocol.py) | Loads the `protocol` section of `mapsort.yaml`. |
 | [eval/\_\_main\_\_.py](mapsort/eval/__main__.py) | Re-scoring CLI. |
 
-**Revisit metrics** ask whether an object's identity survives the camera returning after a gap. Each event is `preserved`, `switch` or `unmatched`; the counts decompose CLEAR's `IDSW` (at `min_gap=0, grace=1` the switch count equals it). `min_gap` (10) is the absence needed to count as a revisit; `grace` (5) is the re-acquisition window, needed because StrongSORT confirms a track only after `n_init=3` hits.
-
-### Baseline
-
-StrongSORT with stored (GT-derived) detections, test split:
-
-| seq | MOTA | HOTA | IDF1 | IDSW | IDs | GT_IDs |
-|---|---|---|---|---|---|---|
-| 0003 | 86.77 | 56.89 | 45.94 | 120 | 116 | 40 |
-| 0007 | 92.85 | 75.36 | 62.47 | 24 | 60 | 37 |
-| 0011 | 92.97 | 76.33 | 64.03 | 23 | 60 | 37 |
-| **combined** | **90.82** | **69.97** | **57.41** | **167** | 236 | 114 |
-
-Of 70 revisit events, **2 preserved identity (2.9%)**: 236 predicted identities for 114 real ones. Detection is near-perfect and association fails; 2.9% is the number to beat.
-
-Checks: re-scoring the external StrongSORT result for 0011 matches `eval_results/0011_metrics.json` exactly, and the run is within ~1 point of the boxmot v22 baseline (HOTA 68.94, MOTA 90.73, IDF1 57.62, IDSW 166).
-
-`MOTA@0.25` equals `MOTA` here because GT detections match GT boxes at IoU ≈ 1. The `restricted` block measures local consistency within revisit windows, not persistence across the gap (fresh ids still score 97%); the event counts are the real metric.
-
 ## Conventions
 
 - Conda env `nerfly`.
 - Frames are RGB `np.ndarray` (H, W, 3, uint8); Detector and Tracker flip to BGR internally.
-- Causality: frame `t` may use frames `1..t` only ([docs/problem.md](docs/problem.md)).
-- Bboxes are `xyxy` in image coordinates. Landmarks are `p_t^i in R^3` in one map frame `M`, with a 3x3 covariance over that position and a separate 3x3 extent for the object's size. The map frame's scale is arbitrary.
+- Bboxes are `xyxy` in image coordinates. Landmarks live in one map frame `M` of arbitrary scale: a mean, a 3x3 covariance over that centre, and a separate 3x3 extent for the object's size.
+- Tracker settings are identical across datasets; only the landmark point filters ([config/landmark_filters.yaml](config/landmark_filters.yaml)) vary.
 
 ## Running
 
@@ -143,14 +158,10 @@ mapsort --split test --detections stored --eval
 
 | Module | State |
 |---|---|
-| Detector | Working (YOLOv8); needs crop-specific weights. |
-| Tracker | Working: BoT-SORT plus a per-frame camera resected from tracked landmarks, which re-matches BoT-SORT's leftovers and revives stationary tracks where their landmarks project, including objects re-entering at the frame edge. |
-| Mapping | Stub. `sfm` landmarks built for 0011 from COLMAP; no backend reads them yet. CUT3R ran offline on 0011, not integrated. |
-| Evaluation | Tracking metrics done; mapping metrics not started (only 0011 has a reconstruction). |
-| Data | All 12 LettuceMOTS sequences in the MOT view, dets from GT. LFSD and mango not added. |
+| Detector | YOLO wrapper works; per-dataset crop weights not trained yet, so stored detections are used. |
+| Tracker | Working: BoT-SORT plus the per-frame camera, map motion and edge-aware revival of lost and dormant tracks. |
+| Mapping | Stub. Landmarks come from offline COLMAP reconstructions (`sfm.npz`); CUT3R ran on LettuceMOTS 0011 but is not integrated. |
+| Evaluation | Tracking, count and revisit metrics on all four datasets; paper tables generated by `scripts/eval/`. MangoYield (yield counts only) not added. |
 | Tests | Paused; `tests/` is stale. |
 
-Next: give `Mapping` an `sfm` backend that reads `landmarks/<seq>/sfm.npz`, with a
-backend switch so CUT3R can slot in as the online one. Then landmark association
-in the Tracker, and mapping metrics (Umeyama alignment via `evo`, position error,
-revisit drift, NEES) from [docs/problem.md](docs/problem.md).
+Next: per-dataset YOLO detectors and fine-tuned ReID, MangoYield yield counts, and a `Mapping` backend that produces landmarks online (CUT3R) in place of the offline SfM map.

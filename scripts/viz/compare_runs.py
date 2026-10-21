@@ -27,7 +27,7 @@ value. `--check` re-scores the relabelled ids and prints the diff to prove it.
 
 Usage:
     python scripts/viz/compare_runs.py --dataset moranget --seq V01 \
-        --runs runs/20261007-233206_tracker:MapSORT runs/20261007-233003_tracker:StrongSORT
+        --runs runs/<id>_tracker:MapSORT runs/<id>_tracker:BoT-SORT
 
 `--runs` also takes a tracker file directly: runs/eval-<stamp>/artifacts/<spec>/<dataset>/<seq>.txt:Title
 """

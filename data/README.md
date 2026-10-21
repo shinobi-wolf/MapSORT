@@ -92,8 +92,8 @@ mistake: fusing *extent* across observations would claim sub-plant precision,
 because only centre uncertainty shrinks as `extent / n_kept`.
 
 Detections that enclose no usable point carry `has_landmark = False` rather than
-a sentinel coordinate — load-bearing, since those degrade to appearance-only
-association downstream. `position` is `nan` there, never zero, which is itself a
+a sentinel coordinate — load-bearing, since those take part only in BoT-SORT's
+own association downstream. `position` is `nan` there, never zero, which is itself a
 plausible coordinate.
 
 `raw` is a pointer, so the download stays wherever it already lives and is
@@ -255,7 +255,7 @@ one sequence, and there is real 3D ground truth to score landmarks against.
   check when one is downloaded.
 - **Landmarks are thin.** `landmarks/V01/sfm.npz` is built with `--min-track 5`
   and covers 6037/7848 detections, but the median box still encloses only **2**
-  surviving keypoints against LettuceMOTS' 162 — a 40px fruit is a far smaller
+  surviving keypoints against 43 on LettuceMOTS 0011 — a 40px fruit is a far smaller
   target than a lettuce plant. `extent` from two points is close to degenerate,
   and the `covariance = extent / n_kept` divisor means even less here than it
   does there. Median extent sd is 0.083 against a median GT fruit radius of

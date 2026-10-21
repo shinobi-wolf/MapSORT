@@ -113,9 +113,9 @@ def find_events(
 
     `grace` is the number of frames the tracker is allowed to re-acquire a
     returning object before the event counts as unmatched. It exists because
-    trackers confirm a new track only after several hits -- StrongSORT's
-    `n_init` is 3 -- so a returning object emits nothing at all for its first
-    few frames. Scoring only the reappearance frame would report every revisit as
+    trackers confirm a new track only after several hits (BoT-SORT on its second
+    match, MapSORT later still at the frame edge), so a returning object emits
+    nothing at all for its first few frames. Scoring only the reappearance frame would report every revisit as
     unmatched and hide whether the identity was preserved, which is the thing
     being measured. The grace window is clipped to frames where the object is
     still actually present.

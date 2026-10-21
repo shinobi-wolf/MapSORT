@@ -88,5 +88,5 @@ protocol:
   # Revisit-restricted identity metrics (mapsort/eval/revisit.py).
   revisit:
     min_gap: 10  # frames absent before a return counts as a revisit
-    grace: 5  # frames allowed to re-acquire; StrongSORT needs n_init=3 hits to confirm
+    grace: 5  # frames allowed to re-acquire; a new track is reported only once confirmed
     window: 30  # frames after each reappearance in the `restricted` metrics
