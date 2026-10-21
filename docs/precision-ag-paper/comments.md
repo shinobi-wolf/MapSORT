@@ -40,7 +40,7 @@ Comments are appended per draft iteration. Each item notes how it was handled in
 
 ### 5. Discussion
 - This section needs to be expanded with discussion of the other datasets, once all evaluations are finished.
-  *Pending: to be done when asked, after the evaluations.*
+  *Draft 3: done. One paragraph per viewing pattern (LettuceMOTS, MOrangeT, GrapeMOTS, AppleMOTS), plus consequences and limitations.*
 
 ### 6. Conclusion
 - This is the only place where the paper mentions that MapSORT is offline. Treat the offline aspect as a fleeting limitation: recent online mappers show promise, and a future extension of this work will target it.
@@ -49,3 +49,26 @@ Comments are appended per draft iteration. Each item notes how it was handled in
 ### Appendix A
 - The table should come after the section heading.
   *Draft 2: the table is pinned below the heading.*
+
+## Draft 3 (2026-10-21): full revision, no new comments
+
+The method changed, so the paper is rewritten to it. The Iteration 1 rules still hold:
+- no "--" dashes;
+- "offline" appears only in the Conclusion;
+- there is one results set, written as YOLO plus fine-tuned ReID;
+- the keywords follow the abstract, and page 2 starts with text.
+
+- Method: MapSORT is now BoT-SORT plus a per-frame camera, fitted to the tracks' own landmarks (DLT or plane homography). The camera drives two stages: map motion, which re-matches unmatched tracks, and revival of lost and dormant tracks by reprojection. Revival is edge-aware, and new tracks at the frame edge wait for it. Sect. 3, Fig. 2 and Alg. 1 are rewritten; the StrongSORT cascade is gone.
+- Baselines: StrongSORT is removed as a baseline; BoT-SORT and SAM2MOT remain.
+- Fig. 1: the teaser placeholder is replaced by a real BoT-SORT vs. MapSORT frame (LettuceMOTS 0011), which the qualitative section also uses.
+- Results: all tables and figures come from runs eval-20261021-013935 (baselines) and eval-20261021-191525 (MapSORT), on all test sequences.
+- Appendix B is new. It gives per-sequence results for all 21 test sequences, backing the per-sequence comparison with BoT-SORT.
+- Statistics: the dataset and per-sequence statistics are filled in, and the scene-map table is recomputed from the current reconstructions.
+- Still TBD:
+  - detector details and AP50;
+  - ReID fine-tuning data;
+  - SfM times;
+  - the AppleMOTS and MangoYield landmark filters;
+  - all MangoYield values;
+  - the three qualitative panels of Fig. 7;
+  - affiliation, acknowledgements and funding.

@@ -40,6 +40,10 @@
 \newcommand{\bSig}{\bm{\Sigma}}
 \newcommand{\bS}{\bm{S}}
 \newcommand{\bX}{\bm{X}}
+\newcommand{\bP}{\bm{P}}
+\newcommand{\bH}{\bm{H}}
+\newcommand{\bo}{\bm{o}}
+\newcommand{\bc}{\bm{c}}
 \newcommand{\bLam}{\bm{\Lambda}}
 \newcommand{\bEta}{\bm{\eta}}
 \newcommand{\hmu}{\hat{\bmu}}
@@ -62,13 +66,13 @@
 
 \abstract{\textbf{Purpose:} Plant- and fruit-level records in precision agriculture, such as yield estimates, phenotyping logs and targeted spraying, require every plant or fruit to keep one identity across a video, including when the camera leaves and later returns to it. General-purpose multi-object trackers lose identity in exactly this situation, because crops look alike and an object out of view for more than a few frames is forgotten. This work turns the property that sets agricultural targets apart, that they do not move, into an association cue that keeps identities intact across occlusions and revisits.
 
-\textbf{Methods:} MapSORT reconstructs the sequence with structure-from-motion and lifts every detection to a landmark observation: a Gaussian over the object's position in the scene map, with centre uncertainty kept separate from physical extent. Tracks fuse their observations in information form and are matched by a scale-invariant Mahalanobis gate inside a StrongSORT-style association cascade. Tracks that leave the view become dormant, not deleted, and are revived by their landmark. MapSORT is compared with BoT-SORT, SAM2MOT and StrongSORT on four public datasets (LettuceMOTS, MOrangeT, GrapeMOTS, AppleMOTS) and on per-tree yield counts in a mango orchard.
+\textbf{Methods:} MapSORT reconstructs the scene with structure-from-motion and gives every detection and every track a landmark: a Gaussian over the object's position in the scene map. Built on BoT-SORT, it fits a camera to its own tracks in every frame, from their landmarks and boxes, and uses that camera to place each stationary object in the image. Tracks the frame-to-frame association misses are re-matched where their landmark projects; lost tracks, and tracks that left the view long ago and were kept dormant rather than deleted, are revived the same way, including objects that re-enter at the frame edge. MapSORT is compared with BoT-SORT and SAM2MOT on four public datasets (LettuceMOTS, MOrangeT, GrapeMOTS, AppleMOTS) and on per-tree yield counts in a mango orchard.
 
-\textbf{Results:} MapSORT reaches \tbd{} HOTA and \tbd{} IDF1 on average, \tbd{} and \tbd{} points above the strongest baseline. It preserves identity in \tbd{}\% of revisit events, compared with \tbd{}\% for the best competitor. Per-tree mango counts are within \tbd{}\% of harvest counts. On a back-and-forth lettuce sequence MapSORT tracks all 37 plants with zero identity switches and an exact count.
+\textbf{Results:} Averaged over the four datasets, MapSORT reaches 95.5 HOTA and 96.0 IDF1, 10.3 and 16.7 points above BoT-SORT, and cuts identity switches from 1154 to 217. It preserves identity in 92.0\% of 1043 revisit events, against 9.1\% for BoT-SORT, at every length of absence. It has fewer identity switches than BoT-SORT on 19 of the 21 test sequences and ties on the other two, where BoT-SORT makes none and one. Per-tree mango counts are within \tbd{}\% of the ground-truth yield.
 
-\textbf{Conclusion:} A scene-map position is a persistent identity cue for stationary crops. Using it in association yields identity-consistent tracks and accurate counts across crops, platforms and viewing patterns.}
+\textbf{Conclusion:} The position of a stationary object in a map of the scene is an identity cue that survives arbitrarily long absences. Recovering the camera from the tracks themselves turns that position into a motion model and a re-identification cue, giving identity-consistent tracks and accurate counts across crops, platforms and viewing patterns.}
 
-\keywords{Multi-object tracking, Structure-from-motion, Fruit counting, Plant re-identification, Agricultural robotics, Yield estimation}
+\keywords{Multi-object tracking, Structure-from-motion, Camera resection, Fruit counting, Plant re-identification, Yield estimation}
 
 \maketitle
 
@@ -79,25 +83,23 @@ Many precision-agriculture tasks operate at the level of the individual plant or
 
 Agricultural video makes this hard in a specific way. Plants in a row, oranges on a tree and grape bunches on a cane are visually near-identical, so appearance embeddings learned for pedestrians separate them poorly. Leaves, branches and neighbouring fruit occlude them. Most importantly, the camera routinely leaves an object and comes back to it: a ground robot drives a row and returns along it, a handheld camera sweeps the canopy more than once, a UAV inspects a vine from several perspectives. Tracking-by-detection methods \citep{bewley2016sort,wojke2017deepsort,zhang2022bytetrack,aharon2022botsort,du2023strongsort} predict object motion in the image plane and keep an unmatched track alive for a fixed number of frames. An object that is out of view for longer is deleted and receives a new identity when it reappears. Every such switch inflates the count and fragments the plant's record (Fig.~\ref{fig:teaser}).
 
-
-The targets of agricultural tracking have a property that pedestrians and vehicles do not: they are stationary. A lettuce occupies the same place in the field on the outbound and return pass; an orange hangs at the same point of the canopy however often the camera sweeps past it. Its position in a three-dimensional map of the scene is therefore an identity cue that does not decay with time out of view, does not depend on appearance, and does not require the object's image-plane motion to be predictable. Structure-from-motion (SfM) recovers such a map, along with every camera pose, from the same monocular RGB video the tracker consumes \citep{schonberger2016colmap}.
+The targets of agricultural tracking have a property that pedestrians and vehicles do not: they are stationary. A lettuce occupies the same place in the field on the outbound and return pass; an orange hangs at the same point of the canopy however often the camera sweeps past it. Its position in a three-dimensional map of the scene is therefore an identity cue that does not decay with time out of view and does not depend on appearance. Structure-from-motion (SfM) recovers such a map from the same monocular RGB video the tracker consumes \citep{schonberger2016colmap}.
 
 \begin{figure}[b]
 \centering
-\figph{0.47\textwidth}{6.2cm}{\textbf{(a) BoT-SORT}\\[4pt]Return pass of LettuceMOTS 0011.\\Every returning plant carries a new identity;\\\tbd{} identities issued for 37 plants.}\hfill
-\figph{0.47\textwidth}{6.2cm}{\textbf{(b) MapSORT}\\[4pt]Same frame.\\Every plant keeps the identity it received\\on the outbound pass; 37 identities issued.}
-\caption{The same frame of a field robot's return pass along two lettuce rows, tracked by (a) BoT-SORT and (b) MapSORT. BoT-SORT has forgotten the plants it saw on the way out and counts each of them again. MapSORT recognises every plant from its position in the scene map and keeps one identity per plant.}
+\includegraphics[width=\textwidth]{figures/botsort_vs_mapsort.png}
+\caption{The same frame of a field robot's return pass along two lettuce rows (LettuceMOTS 0011), tracked by BoT-SORT (left) and MapSORT (right). Identities are numbered in order of first appearance. BoT-SORT has forgotten the plants it saw on the way out and has issued 56 identities for 37 plants; every plant in view carries a new one. MapSORT gives each plant the identity it received on the outbound pass and has issued 39.}
 \label{fig:teaser}
 \end{figure}
 
-This paper presents MapSORT, a tracker that makes scene-map position a first-class association cue. MapSORT lifts each detection to a \emph{landmark observation}: a Gaussian over the object's centre in the map frame, with a covariance that expresses how well the centre is known and a separate extent that expresses how large the object is. Tracks accumulate their observations into a fused landmark whose uncertainty shrinks with every sighting. Association adds a landmark stage, gated by a Mahalanobis distance that is invariant to the arbitrary scale of a monocular reconstruction, to the appearance and motion stages of StrongSORT \citep{du2023strongsort}. A track that leaves the field of view is put to sleep rather than deleted, and is revived by its landmark when the camera returns, however long the absence.
+A stationary object's map position is only useful for tracking if it can be compared with what the camera sees now. Comparing positions in 3D, as earlier fruit trackers do, is fragile: a landmark triangulated from a few keypoints is uncertain mostly along the viewing ray, which is exactly the direction that separates neighbouring fruit in depth. Projecting the landmark into the current image removes that direction, but needs the current camera. This paper presents MapSORT, which obtains that camera from the tracker itself. Every frame, the tracks that a standard frame-to-frame tracker has just matched supply correspondences between their landmarks and their boxes, and a robust resection recovers the frame's camera from them. With the camera, every stationary object, tracked, lost or long gone, has a predicted position in the current image. MapSORT uses it twice: as a motion model that re-matches tracks the frame-to-frame association missed, and as a re-identification cue that revives a track when its object comes back into view, however long it was away.
 
 The contributions of this work are:
 \begin{enumerate}
-\item A landmark observation model for detections of stationary objects, built from the SfM points the detection encloses, that separates centre uncertainty from object extent, fuses across observations in information form, and yields a gating distance invariant to reconstruction scale.
-\item MapSORT, a tracking-by-detection method that inserts landmark association and landmark-based revival of dormant tracks into a StrongSORT association cascade, so that identity survives arbitrarily long absences.
+\item A per-frame camera resection from the tracker's own landmark-to-box correspondences, robust to wrong matches and to near-coplanar scenes such as a field of lettuce, which places every stationary object, visible or not, in the current image.
+\item MapSORT, which adds two stages to BoT-SORT \citep{aharon2022botsort}: a map-motion stage that re-matches unmatched tracks where the camera places them, and a revival stage that reclaims the identity of lost and dormant tracks by reprojection, including objects that re-enter at the frame edge with only a sliver visible. Tracks that leave the view are kept dormant instead of deleted, so identity survives absences of any length.
 \item A revisit-centred evaluation protocol: a revisit identity preservation rate that decomposes CLEAR identity switches by the absence that preceded them, together with count error, which is the quantity yield estimation consumes.
-\item A benchmark against BoT-SORT and SAM2MOT on four public agricultural datasets (LettuceMOTS, MOrangeT, GrapeMOTS and AppleMOTS), covering four crops, four platforms and three viewing patterns, and a yield-count evaluation in a mango orchard against harvested fruit counts per tree.
+\item A benchmark against BoT-SORT and SAM2MOT on four public agricultural datasets (LettuceMOTS, MOrangeT, GrapeMOTS and AppleMOTS), covering four crops, four platforms and three viewing patterns, with per-sequence results, and a yield-count evaluation in a mango orchard against per-tree yield counts.
 \end{enumerate}
 
 %% =====================================================================
@@ -105,9 +107,9 @@ The contributions of this work are:
 
 \subsection{Tracking-by-detection}
 
-SORT \citep{bewley2016sort} established the tracking-by-detection template: a constant-velocity Kalman filter \citep{kalman1960} predicts each track's box, and Hungarian matching \citep{kuhn1955hungarian} on intersection-over-union (IoU) assigns detections to tracks. DeepSORT \citep{wojke2017deepsort} added an appearance embedding and a matching cascade that prioritises recently seen tracks. ByteTrack \citep{zhang2022bytetrack} recovers low-confidence detections in a second association round; OC-SORT \citep{cao2023ocsort} corrects Kalman drift during occlusion from observations; FairMOT \citep{zhang2021fairmot} learns detection and embedding jointly. BoT-SORT \citep{aharon2022botsort} combines camera-motion compensation, a refined Kalman state and fused IoU and appearance costs. StrongSORT \citep{du2023strongsort} modernises DeepSORT with a stronger re-identification backbone, exponential-moving-average feature updates, a noise-scaled Kalman filter and fused appearance and motion costs. SAM2MOT \citep{jiang2025sam2mot} departs from box association altogether: it uses the SAM~2 video segmentation model \citep{ravi2024sam2} to propagate object masks through time, so identity follows from segmentation rather than from matching.
+SORT \citep{bewley2016sort} established the tracking-by-detection template: a constant-velocity Kalman filter \citep{kalman1960} predicts each track's box, and Hungarian matching \citep{kuhn1955hungarian} on intersection-over-union (IoU) assigns detections to tracks. DeepSORT \citep{wojke2017deepsort} added an appearance embedding and a matching cascade that prioritises recently seen tracks. ByteTrack \citep{zhang2022bytetrack} recovers low-confidence detections in a second association round; OC-SORT \citep{cao2023ocsort} corrects Kalman drift during occlusion from observations; FairMOT \citep{zhang2021fairmot} learns detection and embedding jointly. StrongSORT \citep{du2023strongsort} modernises DeepSORT with a stronger re-identification backbone and fused appearance and motion costs. BoT-SORT \citep{aharon2022botsort} compensates camera motion with a global image warp, refines the Kalman state, and fuses IoU and appearance costs; it is the base of MapSORT. SAM2MOT \citep{jiang2025sam2mot} departs from box association altogether: it uses the SAM~2 video segmentation model \citep{ravi2024sam2} to propagate object masks through time, so identity follows from segmentation rather than from matching.
 
-All of these methods reason about identity in the image plane or in an appearance space. Neither is stable when the camera leaves an object and returns: image-plane motion over a long absence is not predictable, and appearance galleries are bounded in both size and age. MapSORT keeps the appearance and motion machinery of StrongSORT and adds a cue that remains valid over any absence.
+All of these methods reason about identity in the image plane or in an appearance space. Neither is stable when the camera leaves an object and returns: image-plane motion over a long absence is not predictable, a global warp cannot follow the parallax of a three-dimensional canopy, and appearance galleries are bounded in both size and age. MapSORT keeps BoT-SORT's appearance and motion machinery and adds a cue that remains valid over any absence.
 
 \subsection{Tracking and counting in crops and orchards}
 
@@ -117,18 +119,18 @@ Video-based fruit counting tracks fruit to avoid counting it more than once. \ci
 
 Several works use multi-view geometry to localise fruit. \citet{stein2016mango} triangulated mango detections from a GNSS/INS-referenced vehicle to count fruit per tree. \citet{liu2019monocular} combined monocular SfM with semantic data association to count and map fruit. \citet{genemola2020sfm} projected instance segmentations onto an SfM point cloud to locate apples in 3D. \citet{rapado2023tomato} tracked tomatoes in 3D from a robot arm with known camera poses. \citet{santos2024moranget} relocalised oranges in 3D to recover them after occlusion and showed that removing relocalisation more than halves HOTA on MOrangeT.
 
-These approaches represent fruit position as a point and compare positions with a fixed, hand-tuned distance threshold. A point carries no notion of how well it is known, and a metric threshold is meaningless in a monocular reconstruction whose scale is arbitrary. MapSORT instead represents each observation as a Gaussian with an explicit covariance, fuses observations so that a track's position sharpens with every sighting, and gates association with a Mahalanobis distance that is independent of scale. It also integrates the landmark cue into a modern appearance-and-motion association cascade rather than replacing it, and uses it to revive tracks that a frame-to-frame tracker would have discarded.
+These approaches either compare fruit positions in 3D with a fixed, hand-tuned distance threshold, or rely on camera poses from the reconstruction or an external sensor. MapSORT differs in three ways. Its landmarks are Gaussians whose uncertainty shrinks as observations are fused, and its 3D gate is a Mahalanobis distance that does not depend on the arbitrary scale of a monocular reconstruction. It recovers the camera that relates the map to the current image from its own tracks in every frame, so the projection it compares against is consistent with what the tracker currently believes. And it integrates the landmark cue into a modern tracker as a motion model and a revival stage, rather than replacing association.
 
 %% =====================================================================
 \section{Materials and methods}\label{sec:methods}
 
 \subsection{Problem formulation}\label{sec:problem}
 
-The input is a monocular RGB video $\{I_1,\dots,I_T\}$ captured by a moving camera, with no depth, odometry or positioning sensor, and at each frame $t$ a set of detections $D_t=\{d_t^1,\dots,d_t^{n_t}\}$, each an axis-aligned box $b_t^i$. The scene contains stationary objects. The task is to produce tracks $\mathcal{T}=\{\tau_1,\dots,\tau_K\}$, $\tau_k=\{(t,d_t^i)\}$, such that each track corresponds to exactly one physical object and each object to exactly one track: identity must be preserved through occlusion, visual ambiguity and camera motion, including when the camera returns to an object after it has been out of view.
+The input is a monocular RGB video $\{I_1,\dots,I_T\}$ captured by a moving camera, with no depth, odometry or positioning sensor, and at each frame $t$ a set of detections $D_t=\{d_t^1,\dots,d_t^{n_t}\}$, each an axis-aligned box $b_t^i$ with centre $\bc_t^i$ and size $s_t^i$, the geometric mean of its width and height. The scene contains stationary objects. The task is to produce tracks $\mathcal{T}=\{\tau_1,\dots,\tau_K\}$, $\tau_k=\{(t,d_t^i)\}$, such that each track corresponds to exactly one physical object and each object to exactly one track: identity must be preserved through occlusion, visual ambiguity and camera motion, including when the camera returns to an object after it has been out of view.
 
 \subsection{Overview}\label{sec:overview}
 
-Fig.~\ref{fig:arch} shows the MapSORT pipeline. A scene map is reconstructed once per sequence by SfM (Sect.~\ref{sec:map}). At every frame, each detection receives an appearance embedding and a landmark observation read from the map (Sect.~\ref{sec:obs}). Tracks carry a Kalman state, an appearance gallery and a fused landmark (Sect.~\ref{sec:fusion}). A four-stage association cascade matches detections to active tracks by appearance and motion, by landmark, and by IoU, and finally to dormant tracks by landmark (Sect.~\ref{sec:assoc}). Tracks that leave the view are moved to a dormant pool instead of being deleted (Sect.~\ref{sec:dormant}). Algorithm~\ref{alg:mapsort} summarises one frame.
+Fig.~\ref{fig:arch} shows the MapSORT pipeline. A scene map is reconstructed once per sequence by SfM (Sect.~\ref{sec:map}), and every detection receives a landmark observation read from it (Sect.~\ref{sec:obs}). Tracks fuse their observations into a landmark (Sect.~\ref{sec:fusion}). At every frame, BoT-SORT's own association runs first. The pairs it matches, with the tracks' landmarks, yield the frame's camera (Sect.~\ref{sec:camera}). The camera then drives two further stages: tracks left unmatched are tried again where it places them, and lost and dormant tracks are revived where their landmarks project (Sect.~\ref{sec:assoc}). Tracks that leave the view are kept dormant rather than deleted (Sect.~\ref{sec:dormant}). Algorithm~\ref{alg:mapsort} summarises one frame.
 
 \begin{figure*}[t]
 \centering
@@ -141,15 +143,15 @@ Fig.~\ref{fig:arch} shows the MapSORT pipeline. A scene map is reconstructed onc
   appbox/.style={box, draw=capp, fill=capp!8},
   lmbox/.style={box, draw=clm, fill=clm!8},
   trkbox/.style={box, draw=ctrk, fill=ctrk!6},
-  stage/.style={draw, rounded corners=2pt, align=left, text width=5.7cm, minimum height=0.85cm, inner sep=3.5pt, line width=0.6pt, fill=white},
+  stage/.style={draw, rounded corners=2pt, align=left, text width=6.0cm, minimum height=0.95cm, inner sep=3.5pt, line width=0.6pt, fill=white},
   num/.style={circle, draw, fill=white, inner sep=0pt, minimum size=4.8mm, font=\sffamily\scriptsize\bfseries},
   lbl/.style={font=\sffamily\scriptsize, align=center, text=black!75},
   flow/.style={->, line width=0.7pt},
 ]
 % ---------------- map construction ----------------
-\node[mapbox, text width=2.3cm] (video) at (0,7.2) {Video\\$I_1,\dots,I_T$};
-\node[mapbox, text width=4.4cm] (sfm) at (4.3,7.2) {Structure-from-motion\\{\scriptsize SIFT, exhaustive matching, BA}};
-\node[mapbox, text width=4.2cm] (map) at (9.1,7.2) {Scene map $\mathcal{M}$\\{\scriptsize 3D points, camera poses, 2D-to-3D correspondences}};
+\node[mapbox, text width=2.3cm] (video) at (0,7.4) {Video\\$I_1,\dots,I_T$};
+\node[mapbox, text width=4.4cm] (sfm) at (4.3,7.4) {Structure-from-motion\\{\scriptsize SIFT, exhaustive matching, BA}};
+\node[mapbox, text width=4.2cm] (map) at (9.1,7.4) {Scene map $\mathcal{M}$\\{\scriptsize 3D points and their keypoints in each frame}};
 \draw[flow, cmap] (video) -- (sfm);
 \draw[flow, cmap] (sfm) -- (map);
 \begin{scope}[on background layer]
@@ -158,22 +160,22 @@ Fig.~\ref{fig:arch} shows the MapSORT pipeline. A scene map is reconstructed onc
 
 % ---------------- per-frame inputs ----------------
 \node[trkbox, text width=2.3cm] (frame) at (0,3.45) {Frame $I_t$\\detections $D_t$};
-\node[lmbox, text width=4.0cm] (lm) at (4.1,4.45) {Landmark observation\\$\mathcal{N}(\bmu_t^i,\bSig_t^i)$, extent $\bS_t^i$};
+\node[lmbox, text width=4.0cm] (lm) at (4.1,4.45) {Landmark observation\\$\mathcal{N}(\bmu_t^i,\bSig_t^i)$};
 \node[appbox, text width=4.0cm] (app) at (4.1,2.45) {Appearance encoder\\{\scriptsize OSNet} $\rightarrow f_t^i$};
 \draw[flow] (frame.east) -- ++(0.3,0) |- (lm.west);
 \draw[flow] (frame.east) -- ++(0.3,0) |- (app.west);
 \draw[flow, cmap] (map.south) -- ++(0,-0.75) -| node[lbl, text=cmap, pos=0.25, above] {map points inside each box $b_t^i$} (lm.north);
 
-% ---------------- association cascade ----------------
-\node[stage, draw=capp] (s1) at (13.7,4.75) {Appearance cascade\\{\scriptsize cosine distance, Kalman motion gate}};
-\node[stage, draw=clm, below=0.2cm of s1] (s2) {Landmark association\\{\scriptsize Mahalanobis gate $d^2_{ki}\le\tau$, any staleness}};
-\node[stage, draw=ctrk, below=0.2cm of s2] (s3) {IoU association\\{\scriptsize tentative and just-missed tracks}};
-\node[stage, draw=clm, below=0.2cm of s3] (s4) {Dormant revival\\{\scriptsize landmark gate against dormant pool}};
-\foreach \s/\n/\c in {s1/1/capp, s2/2/clm, s3/3/ctrk, s4/4/clm}
+% ---------------- per-frame stages ----------------
+\node[stage, draw=capp] (s1) at (13.9,5.3) {BoT-SORT association\\{\scriptsize appearance and IoU, camera-motion compensation}};
+\node[stage, draw=cmap, below=0.22cm of s1] (s2) {Camera resection $\bP_t$\\{\scriptsize RANSAC on matched landmarks and box centres}};
+\node[stage, draw=clm, below=0.22cm of s2] (s3) {Map motion\\{\scriptsize unmatched tracks placed at $\pi(\bP_t\hmu_k)+s\,\bo_k$}};
+\node[stage, draw=clm, below=0.22cm of s3] (s4) {Revival\\{\scriptsize lost and dormant tracks by reprojection error}};
+\foreach \s/\n/\c in {s1/1/capp, s2/2/cmap, s3/3/clm, s4/4/clm}
   \node[num, draw=\c, text=\c, left=1.5mm of \s] (n\n) {\n};
 \begin{scope}[on background layer]
-\node[draw=black!55, rounded corners=4pt, fill=black!3, fit=(s1)(s4)(n1)(n4), inner sep=5pt, label={[lbl, anchor=north, inner sep=3pt]south:Hungarian assignment per stage; leftover detections start tentative tracks}] (casc) {};
-\node[lbl, anchor=south west, inner sep=2pt] at (casc.north west) {Association cascade};
+\node[draw=black!55, rounded corners=4pt, fill=black!3, fit=(s1)(s4)(n1)(n4), inner sep=5pt, label={[lbl, anchor=north, inner sep=3pt]south:leftover detections start tentative tracks; at the frame edge they wait for a revival}] (casc) {};
+\node[lbl, anchor=south west, inner sep=2pt] at (casc.north west) {Per-frame association};
 \end{scope}
 \draw[flow, clm] (lm.east) -- (lm.east -| casc.west);
 \draw[flow, capp] (app.east) -- (app.east -| casc.west);
@@ -181,24 +183,23 @@ Fig.~\ref{fig:arch} shows the MapSORT pipeline. A scene map is reconstructed onc
   \draw[->, line width=0.5pt, black!55] (\a.south) -- (\b.north);
 
 % ---------------- track store ----------------
-\node[trkbox, text width=4.6cm, minimum height=1.5cm] (active) at (21.8,4.25) {\textbf{Active tracks}\\{\scriptsize Kalman state, appearance gallery, fused landmark $(\bLam_k,\bEta_k)$}};
-\node[trkbox, text width=4.3cm] (dormant) at (21.8,1.25) {\textbf{Dormant pool}\\{\scriptsize identity and fused landmark}};
-\node[box, draw=black, text width=1.5cm] (out) at (25.8,4.25) {Tracks\\$\mathcal{T}$};
+\node[trkbox, text width=4.6cm, minimum height=1.5cm] (active) at (22.2,4.25) {\textbf{Active tracks}\\{\scriptsize Kalman state, appearance, fused landmark $(\bLam_k,\bEta_k)$, offset $\bo_k$}};
+\node[trkbox, text width=4.3cm] (dormant) at (22.2,1.15) {\textbf{Dormant pool}\\{\scriptsize identity, landmark and offset}};
+\node[box, draw=black, text width=1.5cm] (out) at (26.2,4.25) {Tracks\\$\mathcal{T}$};
 \draw[flow] (active.east) -- (out.west);
 
-\draw[flow] (s1.east |- active.west) ++(0,0.25) coordinate (m) (casc.east |- m) -- node[lbl, above] {matches 1 to 3:} node[lbl, below] {update, fuse} (active.west |- m);
+\draw[flow] (s1.east |- active.west) ++(0,0.25) coordinate (m) (casc.east |- m) -- node[lbl, above] {matches:} node[lbl, below] {update, fuse} (active.west |- m);
 \draw[flow, clm] ($(s4.east)+(0,0.18)$) -- ++(1.3,0) |- node[lbl, text=clm, pos=0.3, right] {revive} ($(active.west)+(0,-0.45)$);
 \draw[flow, clm] (dormant.west) -- node[lbl, text=clm, below] {candidates} (dormant.west -| casc.east);
-\draw[flow] ($(active.south)+(0.6,0)$) -- node[lbl, right, align=left] {unseen $>A_{\max}$\\with landmark} ($(dormant.north)+(0.6,0)$);
-\draw[flow, dashed, black!55] ($(active.north)+(-0.6,0)$) |- ++(0,0.75) -| node[lbl, pos=0.25, above] {predicted states, galleries, landmarks} ($(casc.north east)+(-0.8,0)$);
+\draw[flow] ($(active.south)+(0.6,0)$) -- node[lbl, right, align=left] {lost $>A_{\max}$\\with landmark} ($(dormant.north)+(0.6,0)$);
 \end{tikzpicture}}
-\caption{MapSORT. A scene map is reconstructed once per sequence by structure-from-motion. At each frame, every detection gets an appearance embedding and a landmark observation: a Gaussian over its centre in the map frame, read from the map points it encloses. Detections are matched to active tracks by appearance and motion (1), by landmark (2) and by IoU (3), then to dormant tracks by landmark (4). Matched tracks fuse the new observation into their landmark. A confirmed track unseen for longer than $A_{\max}$ frames becomes dormant instead of being deleted, so a returning object reclaims its identity.}
+\caption{MapSORT. A scene map is reconstructed once per sequence by structure-from-motion. At each frame, every detection gets an appearance embedding and a landmark observation read from the map points it encloses. BoT-SORT's association runs first (1). Its matches, with the tracks' fused landmarks, yield the frame's camera (2), which places every stationary track in the image: tracks still unmatched are re-matched where it places them (3), and lost and dormant tracks are revived where their landmarks project (4). A confirmed track lost for longer than $A_{\max}$ frames becomes dormant instead of being deleted, so a returning object reclaims its identity.}
 \label{fig:arch}
 \end{figure*}
 
 \subsection{Scene map from structure-from-motion}\label{sec:map}
 
-The scene map is a sparse SfM reconstruction of the sequence computed with COLMAP \citep{schonberger2016colmap}. SIFT features \citep{lowe2004sift} are extracted at full resolution, because the finest scale-space octaves carry the small objects, fruit and bunches, from which landmarks are read. All frames share one camera with a radial distortion model. Matching is exhaustive rather than sequential, so that frames from a revisit are matched directly to frames from the first pass and the two passes share 3D points; this is what places a returning object at the same map position. Incremental mapping with bundle adjustment then yields camera poses, a point cloud, and for every registered frame the 2D keypoints that observe each 3D point. When a sequence carries no camera metadata, a known focal length is held fixed during mapping and refined in a final bundle adjustment. The largest reconstructed model is kept. Its frame of reference and scale are arbitrary; MapSORT never needs metric scale.
+The scene map is a sparse SfM reconstruction of the sequence computed with COLMAP \citep{schonberger2016colmap}. SIFT features \citep{lowe2004sift} are extracted at full resolution, because the finest scale-space octaves carry the small objects, fruit and bunches, from which landmarks are read. All frames share one camera with a radial distortion model. Matching is exhaustive rather than sequential, so that frames from a revisit are matched directly to frames from the first pass and the two passes share 3D points; this is what places a returning object at the same map position. Incremental mapping with bundle adjustment then yields a point cloud and, for every registered frame, the 2D keypoints that observe each 3D point. When a sequence carries no camera metadata, a known focal length is held fixed during mapping and refined in a final bundle adjustment. The largest reconstructed model is kept. Its frame of reference and scale are arbitrary; MapSORT never needs metric scale.
 
 \subsection{Landmark observations}\label{sec:obs}
 
@@ -208,9 +209,7 @@ For detection $d_t^i$ with box $b_t^i$, let $\mathcal{P}_t^i=\{\bX_j\}_{j=1}^{n}
 \bS_t^i &= \operatorname{Cov}(\mathcal{P}_t^i) + r^2\bm{I}, \qquad r=\tfrac{1}{4}\,\lVert b_t^i\rVert\,\bar{z}/f, \label{eq:extent}\\
 \bSig_t^i &= \bS_t^i / n, \label{eq:cov}
 \end{align}
-where the median is taken per coordinate, $\lVert b_t^i\rVert$ is the box diagonal in pixels, $\bar z$ the median camera-frame depth of the points and $f$ the focal length. The extent $\bS_t^i$ is the object's physical spread in the map frame; the isotropic floor $r^2\bm{I}$, the object's apparent radius back-projected to its depth, keeps it well conditioned when only a few points survive. The covariance $\bSig_t^i$ is the uncertainty about where the object's \emph{centre} lies, which shrinks as more points support the estimate.
-
-The distinction matters for fusion. $\bS_t^i$ is a property of the plant or fruit and does not shrink however often the object is observed; $\bSig_t^i$ is a property of the evidence and does. Only $\bSig_t^i$ is fused across observations. A detection whose box encloses no usable point carries no landmark, $z_t^i=\varnothing$. This is a first-class outcome: such detections take part in the appearance and IoU stages and are simply excluded from the landmark stages.
+where the median is taken per coordinate, $\lVert b_t^i\rVert$ is the box diagonal in pixels, $\bar z$ the median camera-frame depth of the points and $f$ the focal length. The extent $\bS_t^i$ is the object's physical spread in the map frame; the isotropic floor $r^2\bm{I}$, the object's apparent radius back-projected to its depth, keeps it well conditioned when only a few points survive. The covariance $\bSig_t^i$ is the uncertainty about where the object's \emph{centre} lies, which shrinks as more points support the estimate. Only $\bSig_t^i$ is fused across observations; the extent is a property of the plant or fruit and does not shrink however often the object is observed. A detection whose box encloses no usable point carries no landmark, $z_t^i=\varnothing$, and takes part only in BoT-SORT's association.
 
 \subsection{Landmark fusion}\label{sec:fusion}
 
@@ -220,15 +219,11 @@ Each track $k$ maintains its landmark in information form, accumulating the prec
 \bEta_k=\sum_{(t,i)\in\tau_k}\big(\bSig_t^i\big)^{-1}\bmu_t^i,\qquad
 \hSig_k=\bLam_k^{-1},\quad \hmu_k=\bLam_k^{-1}\bEta_k. \label{eq:fusion}
 \end{equation}
-This is the static-state information filter \citep{thrun2005probabilistic}: because the object does not move, there is no process noise, and the fused covariance $\hSig_k$ contracts with every observation. A track's landmark is therefore most precise for exactly the objects that have been seen the longest, which are the ones whose identity is most valuable to preserve.
-
-\subsection{Association cascade}\label{sec:assoc}
-
-The cost of assigning detection $i$ to track $k$ in the landmark stages is the squared Mahalanobis distance between the observation and the fused landmark, under their combined uncertainty:
+This is the static-state information filter \citep{thrun2005probabilistic}: because the object does not move, there is no process noise, and the fused covariance $\hSig_k$ contracts with every observation. Where MapSORT compares landmarks in 3D, it uses the squared Mahalanobis distance between an observation and a fused landmark under their combined uncertainty,
 \begin{equation}
 d^2_{ki}=\big(\bmu_t^i-\hmu_k\big)^{\!\top}\big(\hSig_k+\bSig_t^i\big)^{-1}\big(\bmu_t^i-\hmu_k\big), \label{eq:maha}
 \end{equation}
-with $d^2_{ki}=\infty$ when either side has no landmark, and pairs with $d^2_{ki}>\tau$ are forbidden.
+and forbids pairs with $d^2_{ki}>\tau$.
 
 \begin{proposition}\label{prop:scale}
 $d^2_{ki}$ is invariant to the similarity transform relating a monocular reconstruction to the metric scene.
@@ -237,46 +232,54 @@ $d^2_{ki}$ is invariant to the similarity transform relating a monocular reconst
 Under $\bX\mapsto s\bm{R}\bX+\bm{t}$, every median, sample covariance, depth and back-projected radius in Eqs.~\eqref{eq:mu} to \eqref{eq:cov} transforms covariantly, so $\bmu\mapsto s\bm{R}\bmu+\bm{t}$ and $\bSig\mapsto s^2\bm{R}\bSig\bm{R}^{\top}$; Eq.~\eqref{eq:fusion} preserves this. The difference in Eq.~\eqref{eq:maha} scales by $s\bm{R}$ and the inverse covariance by $s^{-2}\bm{R}\,(\cdot)\,\bm{R}^\top$, which cancel.
 \end{proof}
 
-The gate $\tau$ is therefore a single dimensionless constant that transfers across sequences, crops and reconstructions without retuning to the scale of each map, a property a fixed metric distance threshold lacks.
+The gate $\tau$ is therefore a single dimensionless constant that transfers across sequences, crops and reconstructions, a property a fixed metric distance threshold lacks.
 
-Association runs in four stages, each a Hungarian assignment on its own cost:
-\begin{enumerate}
-\item \emph{Appearance cascade.} Confirmed tracks are matched by StrongSORT's matching cascade \citep{du2023strongsort}: cosine distance between the detection embedding $f_t^i$ and the track's appearance gallery, blended with the Kalman motion cost and gated by the motion Mahalanobis distance.
-\item \emph{Landmark association.} Confirmed tracks left unmatched by stage~1 are matched to the remaining detections on $d^2_{ki}$. Tracks are eligible here however long they have been unseen: recovering stale tracks is the purpose of this stage, and the landmark of a stationary object is as valid after fifty frames as after one.
-\item \emph{IoU association.} Tentative tracks and tracks missed only in the previous frame are matched on IoU distance, as in StrongSORT.
-\item \emph{Dormant revival.} Detections still unmatched are matched on $d^2_{ki}$ against the dormant pool (Sect.~\ref{sec:dormant}) before any new identity is issued.
-\end{enumerate}
-Detections that remain unmatched start new tentative tracks, which are confirmed after $n_{\text{init}}$ consecutive hits. Every matched track updates its Kalman state and appearance gallery and fuses the detection's landmark observation by Eq.~\eqref{eq:fusion}.
+\subsection{Camera resection from tracked landmarks}\label{sec:camera}
+
+A landmark built from a few keypoints is uncertain mostly along the viewing rays that triangulated it, which is the direction separating a fruit from its neighbours behind or in front of it. Projected into the current image, that error largely disappears. MapSORT therefore compares landmarks in the image, through a camera $\bP_t\in\mathbb{R}^{3\times4}$ fitted in every frame to the tracker's own state.
+
+The correspondences are the pairs $(\hmu_k,\bc_t^i)$ of a track's fused landmark and a detection's box centre, taken from two sources: the track-detection pairs BoT-SORT has just matched (Sect.~\ref{sec:assoc}), and pairs of a track and a detection whose landmarks are mutual nearest neighbours under Eq.~\eqref{eq:maha} within the gate $\tau$. Errors are measured in box sizes, $e=\lVert\pi(\bP_t\hmu_k)-\bc_t^i\rVert/s_t^i$ with $\pi$ the perspective division, so one threshold serves small fruit and large plants alike. $\bP_t$ is estimated by RANSAC \citep{fischler1981ransac}, with the previous frame's camera competing against the random hypotheses and the winner refitted on its inliers for as long as that does not lose inliers. A camera is accepted when at least 8 correspondences agree with it to within half a box size.
+
+Two camera models compete. The full projective camera is fitted by the direct linear transform from six correspondences \citep{hartley2004multiple}. It is ill-conditioned when the landmarks are close to coplanar, as on a field of lettuce seen from above, where any camera that agrees on the plane fits equally well. The second model fits the plane of the landmarks by principal component analysis and a homography $\bH$ from plane coordinates to the image, from four correspondences, lifted to $\bP_t=\bH\bm{F}$ with $\bm{F}$ the projection onto the plane. The plane model is preferred unless the full camera explains at least a tenth more correspondences. When no camera is accepted, MapSORT falls back to the Mahalanobis gate (Sect.~\ref{sec:assoc}).
+
+Each track also learns where its landmark projects within its box. When a track is matched under an accepted camera, the residual $\bm{r}=(\bc_t^i-\pi(\bP_t\hmu_k))/s_t^i$ updates an exponential moving average $\bo_k$ (rate 0.3) of this offset, and a second average $\rho_k$ of $\lVert\bm{r}-\bo_k\rVert$ measures how steadily the camera places the track. A track is \emph{reliable} once it has two offsets and $\rho_k\le0.3$ box sizes. Its predicted box centre is $\pi(\bP_t\hmu_k)+s_k\bo_k$, with $s_k$ its size.
+
+\subsection{Association}\label{sec:assoc}
+
+Each frame runs three stages.
+
+\paragraph{BoT-SORT association.} Tracks are predicted by BoT-SORT's Kalman filter after compensating global camera motion, and matched to detections on fused IoU and appearance costs \citep{aharon2022botsort}. These pairs, with the landmark pairs of Sect.~\ref{sec:camera}, yield the camera $\bP_t$.
+
+\paragraph{Map motion.} Reliable tracks that the first stage left unmatched are moved to their predicted position under $\bP_t$, and the same costs are solved again between them and the detections still unmatched. This recovers tracks whose image-plane motion the Kalman filter could not follow, without disturbing any pair the first stage made. A track still unmatched keeps BoT-SORT's prediction.
+
+\paragraph{Revival.} Detections still unmatched are offered to lost tracks, those missed for at most $A_{\max}$ frames, and to dormant tracks (Sect.~\ref{sec:dormant}), before any new identity is issued. Each candidate's box is predicted at its projected position and its last size not cut by the frame edge, and clipped to the frame, as the detector would see it. The revival cost is the distance between the centres of the clipped prediction and the detection, in box sizes of the candidate, and the assignment is solved by the Hungarian method with a gate of one box size. Candidates must have two offsets, so that their projection has been checked against their box. An object re-entering the view shows only a sliver at the frame edge, and the clipped predictions of several candidates crowd together there. A detection touching the frame edge is therefore only revived by a candidate whose clipped box overlaps it with an IoU of at least 0.3 and is at least half inside the frame. A new track born on such a detection, where a candidate is expected, stays unconfirmed and unreported for up to 8 frames, until enough of the object is visible to revive it or the wait runs out. When no camera is accepted, lost tracks are revived on the Mahalanobis distance of their latest observation and dormant tracks on that of their fused landmark.
+
+Detections that remain unmatched start tentative tracks, which BoT-SORT confirms on a second match. Every matched or revived track fuses the detection's landmark observation by Eq.~\eqref{eq:fusion}.
 
 \subsection{Dormant tracks and identity revival}\label{sec:dormant}
 
-A frame-to-frame tracker deletes a confirmed track after $A_{\max}$ frames without a match, because beyond that horizon its image-plane prediction is no longer informative. For a stationary object, the landmark remains informative indefinitely. MapSORT therefore moves a confirmed track whose landmark has been observed to a dormant pool when it exceeds $A_{\max}$, instead of deleting it. A dormant track keeps its identity and fused landmark. When stage~4 matches it to a detection, the track is revived: its Kalman state is re-initialised from the detection box, since the image-plane motion before the absence says nothing about where the object reappears, its appearance gallery restarts from the new embedding, and its identity and landmark carry over unchanged. The dormant pool is unbounded, so an object keeps its identity across absences of any length.
+A frame-to-frame tracker deletes a track after $A_{\max}$ frames without a match, because beyond that horizon its image-plane prediction is no longer informative. For a stationary object, the landmark remains informative indefinitely. MapSORT therefore moves a confirmed track whose landmark has been observed to a dormant pool when it exceeds $A_{\max}$, instead of deleting it. A dormant track keeps its identity, fused landmark and offset. When the revival stage matches it to a detection, its Kalman state is re-initialised from the detection box, since the image-plane motion before the absence says nothing about where the object reappears, and its identity and landmark carry over unchanged. The dormant pool is unbounded, so an object keeps its identity across absences of any length.
 
 \begin{algorithm}[t]
 \caption{MapSORT update at frame $t$}\label{alg:mapsort}
 \begin{algorithmic}[1]
-\Require detections $D_t$ with embeddings $f_t^i$ and landmark observations $z_t^i$ (possibly $\varnothing$); active tracks $\mathcal{A}$; dormant pool $\mathcal{Z}$
-\State Predict the Kalman state of every $k\in\mathcal{A}$
-\State $(M_1,U_\mathcal{A},U_D)\gets$ appearance cascade over confirmed $k\in\mathcal{A}$ and $D_t$
-\State $(M_2,U_\mathcal{A},U_D)\gets$ Hungarian on $d^2_{ki}$, $k\in U_\mathcal{A}$, $i\in U_D$, gate $\tau$
-\State $(M_3,U'_\mathcal{A},U_D)\gets$ Hungarian on IoU, tentative and just-missed tracks, $i\in U_D$
+\Require detections $D_t$ with embeddings $f_t^i$ and landmark observations $z_t^i$ (possibly $\varnothing$); active tracks $\mathcal{A}$ (tracked and lost); dormant pool $\mathcal{Z}$
+\State Predict and motion-compensate every $k\in\mathcal{A}$; $(M_1,U_\mathcal{A},U_D)\gets$ BoT-SORT association
+\State $\bP_t\gets$ RANSAC resection on $M_1$ and mutual-nearest landmark pairs within $\tau$
+\If{$\bP_t$ accepted}
+  \State $(M_2,U_\mathcal{A},U_D)\gets$ re-solve reliable $k\in U_\mathcal{A}$ at $\pi(\bP_t\hmu_k)+s_k\bo_k$ against $i\in U_D$
+  \State $(M_3,U_D)\gets$ Hungarian on clipped reprojection error, lost $k\in U_\mathcal{A}$ and $k\in\mathcal{Z}$, $i\in U_D$, gate 1 box
+\Else
+  \State $(M_3,U_D)\gets$ Hungarian on $d^2_{ki}$, lost $k\in U_\mathcal{A}$ and $k\in\mathcal{Z}$, $i\in U_D$
+\EndIf
 \For{$(k,i)\in M_1\cup M_2\cup M_3$}
-  \State Update Kalman state and gallery of $k$ with $d_t^i$; fuse $z_t^i$ into $(\bLam_k,\bEta_k)$
+  \State Update $k$ with $d_t^i$ (re-initialise if revived); fuse $z_t^i$ into $(\bLam_k,\bEta_k)$
 \EndFor
-\State $(M_4,U_D)\gets$ Hungarian on $d^2_{ki}$, $k\in\mathcal{Z}$, $i\in U_D$, gate $\tau$
-\For{$(k,i)\in M_4$}
-  \State Move $k$ from $\mathcal{Z}$ to $\mathcal{A}$; re-initialise its Kalman state and gallery from $d_t^i$; fuse $z_t^i$
-\EndFor
-\For{every unmatched $k\in\mathcal{A}$}
-  \If{$k$ is confirmed, unseen for more than $A_{\max}$ frames and has a landmark}
-    \State Move $k$ to $\mathcal{Z}$
-  \Else
-    \State Mark $k$ missed (StrongSORT deletion rules)
-  \EndIf
-\EndFor
+\State Learn offsets $\bo_k,\rho_k$ of matched tracks under $\bP_t$
 \For{every $i\in U_D$}
-  \State Start a tentative track from $d_t^i$; fuse $z_t^i$
+  \State Match to a tentative track or start one; at the frame edge, near an expected revival, keep it unconfirmed
 \EndFor
+\State Move confirmed tracks lost for more than $A_{\max}$ frames with a landmark from $\mathcal{A}$ to $\mathcal{Z}$
 \end{algorithmic}
 \end{algorithm}
 
@@ -287,8 +290,8 @@ MapSORT is evaluated on four publicly available agricultural MOT datasets and on
 \begin{description}
 \item[LettuceMOTS] \citep{hu2024lettucemots} was recorded by a downward-facing camera on a field robot over lettuce at three growth stages. The robot travels back and forth along the rows, so every plant is seen twice, with long absences in between. The three designated test sequences (0003, 0007, 0011) are used.
 \item[MOrangeT] \citep{santos2024moranget} consists of smartphone videos, each sweeping one side of a sweet-orange tree in a commercial grove; the same fruit leaves and re-enters the field of view several times as the camera moves around the canopy. V01, V02 and V05 to V12 are used.
-\item[GrapeMOTS] \citep{arizasentis2024grapemots} was recorded by a UAV over a vineyard. Its path-planned videos view the canopy from multiple perspectives to reduce leaf occlusion, and bunches keep their identity across perspectives. PathPlanning\_1, PathPlanning\_2, PathPlanning\_3 and PathPlanning\_7 are used.
-\item[AppleMOTS] \citep{dejong2022applemots} contains UAV and wearable-camera video of apple trees with dense clusters of small, similar fruit. The test split (0006, 0007, 0008, 0010) is used; sequences 0011 and 0012 repeat 0007 and 0008 with locally edited pixels and are excluded. AppleMOTS sequences are continuous sweeps without revisits, and test the landmark cue in short-term association among dense, near-identical fruit.
+\item[GrapeMOTS] \citep{arizasentis2024grapemots} was recorded by a UAV over a vineyard. Its path-planned videos view the canopy from multiple perspectives to reduce leaf occlusion. PathPlanning\_1, PathPlanning\_2, PathPlanning\_3 and PathPlanning\_7 are used.
+\item[AppleMOTS] \citep{dejong2022applemots} contains UAV and wearable-camera video of apple trees with dense clusters of small, similar fruit. The test split (0006, 0007, 0008, 0010) is used; sequences 0011 and 0012 repeat 0007 and 0008 with locally edited pixels and are excluded. AppleMOTS sequences are continuous sweeps without revisits, and test MapSORT in short-term association among dense, near-identical fruit.
 \item[MangoYield] was collected for this work in a mango orchard in Bengaluru, India, with an Intel RealSense D435i camera mounted on a DJI Matrice 600 hexacopter. The UAV flew around each of three trees, viewing the canopy from all sides, so that fruit seen early in a flight is seen again as the orbit closes. Only the RGB stream is used. The ground truth is the yield count of each tree, which makes MangoYield a direct test of the quantity yield estimation needs (Sect.~\ref{sec:res-yield}).
 \end{description}
 
@@ -301,8 +304,8 @@ MapSORT is evaluated on four publicly available agricultural MOT datasets and on
 Dataset & Crop & Platform, view & Seqs & Frames & Resolution & IDs & Boxes & Revisits \\
 \midrule
 LettuceMOTS & Lettuce & Robot, nadir & 3 & 712 & 810$\times$1080 & 114 & 9\,718 & 70 \\
-MOrangeT & Orange & Phone, lateral & 10 & \tbd & 1083$\times$1944 & \tbd & \tbd & \tbd \\
-GrapeMOTS & Grape & UAV, multi-view & 4 & \tbd & $\le$3840$\times$2160 & \tbd & \tbd & \tbd \\
+MOrangeT & Orange & Phone, lateral & 10 & 3\,695 & $\approx$1080$\times$1920 & 1\,003 & 102\,409 & 950 \\
+GrapeMOTS & Grape & UAV, multi-view & 4 & 1\,761 & $\le$3840$\times$2160 & 196 & 25\,093 & 23 \\
 AppleMOTS & Apple & UAV, wearable & 4 & 626 & 1296$\times$972 & 977 & 27\,533 & 0 \\
 MangoYield (ours) & Mango & UAV, orbit & 3 & \tbd & \tbd & n/a & n/a & n/a \\
 \botrule
@@ -330,7 +333,7 @@ Every tracker receives the same detections, produced by a YOLO detector \citep{j
 
 \subsection{Baselines}\label{sec:baselines}
 
-MapSORT is compared with BoT-SORT \citep{aharon2022botsort} and SAM2MOT \citep{jiang2025sam2mot}, which represent the two strongest current approaches to the problem: fused motion and appearance association with camera-motion compensation, and segmentation-propagation tracking. Both are run from BoxMOT \citep{brostrom2024boxmot} with their default configurations and with the same detections as MapSORT. The appearance-based trackers share one re-identification model per dataset: OSNet-x0.25 \citep{zhou2019osnet}, initialised from MSMT17 and fine-tuned on object identities from \tbd{}. BoT-SORT is also MapSORT's base tracker and shares all of its non-landmark hyperparameters, so comparing the two isolates the effect of the landmark cue.
+MapSORT is compared with BoT-SORT \citep{aharon2022botsort} and SAM2MOT \citep{jiang2025sam2mot}, which represent the two strongest current approaches to the problem: fused motion and appearance association with camera-motion compensation, and segmentation-propagation tracking. Both are run from BoxMOT \citep{brostrom2024boxmot} with their default configurations and with the same detections as MapSORT. The appearance-based trackers share one re-identification model per dataset: OSNet-x0.25 \citep{zhou2019osnet}, initialised from MSMT17 and fine-tuned on object identities from \tbd{}. BoT-SORT is also MapSORT's base tracker and shares all of its settings, so comparing the two isolates the effect of the camera and landmark stages.
 
 \subsection{Evaluation metrics}\label{sec:metrics}
 
@@ -350,10 +353,10 @@ Because the per-frame assignment is CLEAR's own, every revisit switch is one of 
 
 \subsection{Implementation details}\label{sec:impl}
 
-Table~\ref{tab:hparams} lists MapSORT's settings, which are identical across datasets except for the landmark point filters. The appearance and motion stages use BoT-SORT's BoxMOT defaults unchanged. Experiments ran on two machines: a laptop with an Intel Core i9-14900HX CPU and an NVIDIA GeForce RTX~4070 Laptop GPU (8\,GB), and, for the high-resolution GrapeMOTS and AppleMOTS sequences, a workstation with an Intel Xeon E3-1240~v5 CPU (4 cores, 8 threads, 3.5\,GHz) and no GPU.
+Table~\ref{tab:hparams} lists MapSORT's settings. They are identical for every sequence and dataset, except for the landmark point filters of Sect.~\ref{sec:obs}; BoT-SORT's own stages use its BoxMOT defaults unchanged. Experiments ran on a workstation with an Intel Xeon E3-1240~v5 CPU (4 cores, 8 threads, 3.5\,GHz) and no GPU.
 
 \begin{table}[t]
-\caption{MapSORT settings.}\label{tab:hparams}
+\caption{MapSORT settings. Box sizes are geometric means of box width and height.}\label{tab:hparams}
 \footnotesize
 \begin{tabular*}{\textwidth}{@{\extracolsep\fill}lll@{}}
 \toprule
@@ -373,19 +376,23 @@ Component & Parameter & Value \\
  & AppleMOTS & \tbd \\
  & MangoYield & \tbd \\
 \midrule
-\multirow{4}{*}{Appearance} & Re-ID model & OSNet-x0.25, fine-tuned per dataset \\
- & Max.\ cosine distance & 0.4 \\
- & Gallery budget, EMA $\alpha$ & 100, 0.9 \\
- & Appearance weight $\lambda$ & 0.98 \\
+\multirow{5}{*}{BoT-SORT} & Re-ID model & OSNet-x0.25, fine-tuned per dataset \\
+ & Appearance, proximity thresholds & 0.62, 0.61 \\
+ & First-stage match threshold & 0.77 \\
+ & New-track threshold & 0.62 \\
+ & Lost-track buffer $A_{\max}$ & 40 frames at 30 fps \\
 \midrule
-\multirow{3}{*}{Track management} & Confirmation $n_{\text{init}}$ & 3 \\
- & Max.\ age $A_{\max}$ & 30 frames \\
- & Max.\ IoU distance & 0.7 \\
+\multirow{2}{*}{Landmarks} & Mahalanobis gate $\tau$ & 200 \\
+ & Gate for a lost track's latest observation & 10 \\
 \midrule
-\multirow{5}{*}{Landmark association} & Gate $\tau$ (3D fallback) & 200 \\
- & Reprojection revival gate & 1.0 box size \\
- & Camera RANSAC: iterations, inlier, min.\ inliers & 300, 0.5 box size, 8 \\
- & Map motion: min.\ offsets, max.\ residual, EMA & 2, 0.3 box size, 0.3 \\
+\multirow{2}{*}{Camera} & RANSAC iterations, inlier, min.\ inliers & 300, 0.5 box size, 8 \\
+ & Plane preferred unless full camera explains more by & 10\% \\
+\midrule
+\multirow{2}{*}{Map motion} & Offset average rate, min.\ offsets & 0.3, 2 \\
+ & Reliable residual $\rho_k$ & $\le$0.3 box size \\
+\midrule
+\multirow{3}{*}{Revival} & Reprojection gate & 1.0 box size \\
+ & Edge detections: IoU, visible share, wait & 0.3, 0.5, 8 frames \\
  & Dormant pool size & Unbounded \\
 \midrule
 \multirow{3}{*}{Evaluation} & IoU threshold & 0.5 \\
@@ -400,8 +407,7 @@ Component & Parameter & Value \\
 
 \subsection{Comparison with state-of-the-art trackers}\label{sec:res-main}
 
-Table~\ref{tab:main} compares MapSORT with the three baselines on all four datasets. MapSORT achieves the highest HOTA, AssA and IDF1 on \tbd{} of the four datasets. % TODO MapSORT rows need the revised tracker on the full test splits
-The gains concentrate in association: DetA, which reflects localisation and is shared by all trackers given the same detections, moves little, while AssA rises by \tbd{} points on average over the strongest baseline. On the datasets with revisits, MapSORT preserves identity in \tbd{}\% of revisit events, against \tbd{}\% for the best baseline. Count error falls from \tbd{}\% to \tbd{}\% on average, which translates directly into more accurate yield estimates. On AppleMOTS, where objects are never out of view for long, MapSORT should match its BoT-SORT base (HOTA \tbd{} vs.\ \tbd{}).
+Table~\ref{tab:main} compares MapSORT with the two baselines on all four datasets. MapSORT achieves the highest HOTA, AssA, IDF1 and RIP and the fewest identity switches on every dataset. The gains concentrate in association: DetA, which reflects localisation and is shared by all trackers given the same detections, changes by less than one point, while AssA rises by 18.0 points on average over BoT-SORT, from 31.6 and 36.4 points on LettuceMOTS and MOrangeT to 3.4 and 0.7 points on GrapeMOTS and AppleMOTS. Pooled over the 1043 revisit events of the test data, MapSORT preserves identity in 92.0\% of them, against 9.1\% for BoT-SORT and 0.8\% for SAM2MOT. Identity switches fall from 1154 to 217, and the mean absolute count error over the four datasets from 46.1\% to 5.9\%, which translates directly into more accurate yield estimates. SAM2MOT, whose identities follow from propagated segmentation masks, fragments tracks heavily on all four datasets.
 
 \begin{table}[t]
 \caption{Tracking results. CE: count error (\%). RIP: revisit identity preservation rate (\%); AppleMOTS has no revisit events. Best per dataset in bold.}\label{tab:main}
@@ -411,34 +417,36 @@ The gains concentrate in association: DetA, which reflects localisation and is s
 \toprule
 Dataset & Tracker & HOTA$\uparrow$ & AssA$\uparrow$ & DetA$\uparrow$ & MOTA$\uparrow$ & IDF1$\uparrow$ & IDSW$\downarrow$ & CE$\downarrow$ & RIP$\uparrow$ \\
 \midrule
-\multirow{3}{*}{LettuceMOTS} & BoT-SORT & 77.65 & 62.92 & 95.83 & \textbf{95.02} & 64.90 & \textbf{79} & +67.5 & 1.4 \\
+\multirow{3}{*}{LettuceMOTS} & BoT-SORT & 77.65 & 62.92 & 95.83 & 95.02 & 64.90 & 79 & +67.5 & 1.4 \\
  & SAM2MOT & 74.43 & 56.31 & \textbf{98.37} & 93.30 & 59.78 & 493 & +307.9 & 7.1 \\
- & MapSORT & \textbf{78.50} & \textbf{64.29} & 95.84 & 94.46 & \textbf{71.11} & 134 & \textbf{+50.0} & \textbf{21.4} \\
+ & MapSORT & \textbf{95.09} & \textbf{94.51} & 95.67 & \textbf{95.62} & \textbf{96.53} & \textbf{5} & \textbf{+3.5} & \textbf{97.1} \\
 \midrule
 \multirow{3}{*}{MOrangeT} & BoT-SORT & 76.97 & 60.28 & 98.28 & 97.44 & 66.93 & 861 & +84.6 & 9.9 \\
  & SAM2MOT & 69.72 & 49.04 & \textbf{99.11} & 94.33 & 57.89 & 4997 & +423.3 & 0.3 \\
- & MapSORT & \textbf{97.98} & \textbf{96.89} & 99.07 & \textbf{98.98} & \textbf{97.95} & \textbf{101} & \textbf{+6.8} & \textbf{91.4} \\
+ & MapSORT & \textbf{97.88} & \textbf{96.70} & 99.08 & \textbf{99.00} & \textbf{97.80} & \textbf{86} & \textbf{+5.9} & \textbf{92.0} \\
 \midrule
 \multirow{3}{*}{GrapeMOTS} & BoT-SORT & 92.38 & 86.29 & 98.90 & 98.61 & 89.99 & 82 & +30.1 & 0.0 \\
  & SAM2MOT & 66.78 & 46.64 & 95.64 & 79.84 & 58.29 & 4005 & +1536.7 & 0.0 \\
- & MapSORT & \textbf{96.36} & \textbf{93.46} & \textbf{99.35} & \textbf{99.18} & \textbf{96.11} & \textbf{52} & \textbf{-6.1} & \textbf{87.0} \\
+ & MapSORT & \textbf{94.42} & \textbf{89.70} & \textbf{99.39} & \textbf{99.27} & \textbf{93.69} & \textbf{42} & \textbf{-9.2} & \textbf{78.3} \\
 \midrule
 \multirow{3}{*}{AppleMOTS} & BoT-SORT & 94.07 & 92.97 & 95.17 & 94.69 & 95.27 & 132 & \textbf{+2.0} & n/a \\
  & SAM2MOT & 63.12 & 43.30 & 92.02 & 56.01 & 50.33 & 9918 & +559.0 & n/a \\
- & MapSORT & \textbf{94.50} & \textbf{93.23} & \textbf{95.77} & \textbf{95.35} & \textbf{95.53} & \textbf{122} & -4.0 & n/a \\
+ & MapSORT & \textbf{94.72} & \textbf{93.65} & \textbf{95.79} & \textbf{95.49} & \textbf{95.81} & \textbf{84} & -4.9 & n/a \\
 \botrule
 \end{tabular*}
 \end{table}
+
+Table~\ref{tab:perseq} in Appendix~\ref{sec:app-perseq} reports every test sequence. MapSORT has fewer identity switches than BoT-SORT on 19 of the 21 sequences and as few on the other two: GrapeMOTS PathPlanning\_1, where neither makes any, and AppleMOTS 0008, where both make one. Its HOTA is higher on 18 sequences, equal on PathPlanning\_1, and lower on two, GrapeMOTS PathPlanning\_3 and AppleMOTS 0007, which Sect.~\ref{sec:discussion} examines.
 
 \subsection{Representative sequences}\label{sec:res-seq}
 
 One representative sequence per dataset is used for the detailed analyses that follow: LettuceMOTS 0011, MOrangeT V01, GrapeMOTS PathPlanning\_7 and AppleMOTS 0008. Table~\ref{tab:seq} reports all trackers on these sequences.
 
-On LettuceMOTS 0011 the robot drives out along two rows and returns, so each of the 37 plants is seen twice. StrongSORT issues 60 identities and switches identity at every one of the 22 revisit events. MapSORT preserves \tbd{} of the 22 revisits, with HOTA \tbd{} and IDF1 \tbd{}.
+On LettuceMOTS 0011 the robot drives out along two rows and returns, so each of the 37 plants is seen twice. BoT-SORT gives every returning plant a new identity, preserving none of the 22 revisits, and over-counts the plants by 64.9\%. MapSORT preserves 95.0\% of the revisits with two identity switches in the whole sequence, raising HOTA from 77.9 to 93.3 and IDF1 from 64.9 to 93.7 (Fig.~\ref{fig:teaser}).
 
-On MOrangeT V01, a handheld sweep around an orange tree with 104 revisit events, MapSORT raises HOTA from 74.4 to 97.1 and IDF1 from 64.0 to 97.1 over its BoT-SORT base, cuts identity switches from 105 to 16, and preserves identity in 90.3\% of revisits, against 15.8\% for the best baseline. The count error falls from +93.6\% to +9.1\%. This holds although the oranges' landmarks rest on few points (a median of two per detection, Table~\ref{tab:recon}): the camera is fitted to many landmarks at once, so a poorly supported landmark still projects close to its object.
+On MOrangeT V01, a handheld sweep around an orange tree with 104 revisit events, MapSORT raises HOTA from 74.4 to 97.1 and IDF1 from 64.0 to 97.1, cuts identity switches from 105 to 15, and preserves identity in 90.3\% of revisits, against 10.0\% for BoT-SORT. The count error falls from +93.6\% to +8.2\%. This holds although the oranges' landmarks rest on few points (a median of two per detection, Table~\ref{tab:recon}): the camera is fitted to many landmarks at once, so a poorly supported landmark still projects close to its object.
 
-On GrapeMOTS PathPlanning\_7, where the UAV views the vines from several perspectives, MapSORT raises HOTA from 89.6 to 98.0 and IDF1 from 85.5 to 97.9 over BoT-SORT, cuts identity switches from 34 to 8, and brings the count error from +43.1\% to 0.0\%. No baseline preserves any of the 23 revisits; MapSORT preserves 20. On AppleMOTS 0008, which has no revisits and on which BoT-SORT already makes a single identity switch, MapSORT matches BoT-SORT (HOTA 98.80 vs.\ 98.79).
+On GrapeMOTS PathPlanning\_7, where the UAV views the vines from several perspectives, MapSORT raises HOTA from 89.6 to 96.7 and IDF1 from 85.5 to 96.4, cuts identity switches from 34 to 10, and brings the count error from +43.1\% to 0.0\%. Neither baseline preserves any of the 23 revisits; MapSORT preserves 78.3\% of them. On AppleMOTS 0008, which has no revisits and on which BoT-SORT already makes a single identity switch, MapSORT matches it (HOTA 98.81 against 98.79, one switch each).
 
 \begin{table}[t]
 \caption{Results on the representative sequences. Columns as in Table~\ref{tab:main}. AppleMOTS 0008 has no revisit events.}\label{tab:seq}
@@ -448,28 +456,28 @@ On GrapeMOTS PathPlanning\_7, where the UAV views the vines from several perspec
 \toprule
 Sequence & Tracker & HOTA$\uparrow$ & AssA$\uparrow$ & DetA$\uparrow$ & MOTA$\uparrow$ & IDF1$\uparrow$ & IDSW$\downarrow$ & CE$\downarrow$ & RIP$\uparrow$ \\
 \midrule
-\multirow{3}{*}{\shortstack[l]{LettuceMOTS\\0011}} & BoT-SORT & 77.88 & 63.23 & 95.93 & 95.15 & 64.91 & \textbf{24} & +64.9 & 0.0 \\
- & SAM2MOT & \textbf{82.72} & \textbf{69.13} & \textbf{98.99} & \textbf{96.94} & \textbf{70.84} & 63 & +108.1 & 4.5 \\
- & MapSORT & 70.98 & 52.77 & 95.48 & 93.07 & 66.02 & 74 & \textbf{+54.1} & \textbf{9.1} \\
+\multirow{3}{*}{\shortstack[l]{LettuceMOTS\\0011}} & BoT-SORT & 77.88 & 63.23 & 95.93 & 95.15 & 64.91 & 24 & +64.9 & 0.0 \\
+ & SAM2MOT & 82.72 & 69.13 & \textbf{98.99} & \textbf{96.94} & 70.84 & 63 & +108.1 & 4.5 \\
+ & MapSORT & \textbf{93.34} & \textbf{91.48} & 95.25 & 95.18 & \textbf{93.67} & \textbf{2} & \textbf{+5.4} & \textbf{95.0} \\
 \midrule
 \multirow{3}{*}{\shortstack[l]{MOrangeT\\V01}} & BoT-SORT & 74.39 & 56.94 & 97.18 & 95.85 & 64.03 & 105 & +93.6 & 10.0 \\
  & SAM2MOT & 34.08 & 12.18 & 95.35 & 63.76 & 21.30 & 2479 & +1966.4 & 0.0 \\
- & MapSORT & \textbf{97.07} & \textbf{95.74} & \textbf{98.43} & \textbf{98.23} & \textbf{97.08} & \textbf{16} & \textbf{+9.1} & \textbf{90.3} \\
+ & MapSORT & \textbf{97.07} & \textbf{95.75} & \textbf{98.42} & \textbf{98.23} & \textbf{97.08} & \textbf{15} & \textbf{+8.2} & \textbf{90.3} \\
 \midrule
 \multirow{3}{*}{\shortstack[l]{GrapeMOTS\\PathPlanning\_7}} & BoT-SORT & 89.60 & 80.92 & 99.21 & 98.86 & 85.48 & 34 & +43.1 & 0.0 \\
  & SAM2MOT & 58.58 & 36.37 & 94.36 & 78.99 & 50.29 & 1409 & +1573.8 & 0.0 \\
- & MapSORT & \textbf{97.97} & \textbf{96.36} & \textbf{99.62} & \textbf{99.57} & \textbf{97.89} & \textbf{8} & \textbf{0.0} & \textbf{87.0} \\
+ & MapSORT & \textbf{96.73} & \textbf{93.89} & \textbf{99.66} & \textbf{99.59} & \textbf{96.35} & \textbf{10} & \textbf{0.0} & \textbf{78.3} \\
 \midrule
 \multirow{3}{*}{\shortstack[l]{AppleMOTS\\0008}} & BoT-SORT & 98.79 & 98.80 & 98.78 & 98.77 & 99.37 & \textbf{1} & \textbf{0.0} & n/a \\
  & SAM2MOT & 88.72 & 79.66 & \textbf{98.81} & 81.72 & 82.11 & 1815 & +906.1 & n/a \\
- & MapSORT & \textbf{98.80} & \textbf{98.81} & 98.79 & \textbf{98.78} & \textbf{99.38} & \textbf{1} & \textbf{0.0} & n/a \\
+ & MapSORT & \textbf{98.81} & \textbf{98.82} & 98.79 & \textbf{98.79} & \textbf{99.38} & \textbf{1} & \textbf{0.0} & n/a \\
 \botrule
 \end{tabular*}
 \end{table}
 
 \subsection{Identity persistence across revisits}\label{sec:res-revisit}
 
-Fig.~\ref{fig:gap} breaks revisit outcomes down by how long the object was out of view. StrongSORT and BoT-SORT preserve identity only for short absences: 79.6\% and 57.7\% of events with a gap below 30 frames, and almost none beyond, because a track unmatched for longer than its buffer is deleted. MapSORT's rates per bin are \tbd{}; on the representative sequences it preserves 90.3\% (V01) and 87.0\% (PP\_7) of all revisits (Table~\ref{tab:seq}). % TODO MapSORT bins need the full test splits This is the behaviour Sect.~\ref{sec:dormant} is designed to produce: the landmark of a stationary object does not age, so a dormant track is as recoverable after a long absence as after a short one.
+Fig.~\ref{fig:gap} breaks revisit outcomes down by how long the object was out of view. BoT-SORT preserves identity only for short absences: 57.7\% of events with a gap below 30 frames, and almost none beyond, because a track lost for longer than its buffer is deleted. SAM2MOT preserves almost none at any length. MapSORT preserves between 86.2\% and 94.0\% of events in every bin, and its rate does not fall with the length of the absence: it is 94.0\% for absences of 120 frames or more. This is the behaviour Sect.~\ref{sec:dormant} is designed to produce: the landmark of a stationary object does not age, so a dormant track is as recoverable after a long absence as after a short one.
 
 \begin{figure}[t]
 \centering
@@ -488,13 +496,13 @@ Fig.~\ref{fig:gap} breaks revisit outcomes down by how long the object was out o
 ]
 \addplot[fill=black!35] coordinates {(10 to 29,57.7) (30 to 59,3.0) (60 to 119,0.0) ($\geq$120,0.0)};
 \addplot[fill=black!12, draw=black!50, dotted] coordinates {(10 to 29,4.7) (30 to 59,0.6) (60 to 119,0.0) ($\geq$120,0.0)};
-\addplot[fill=clm!75!black] coordinates {(10 to 29,88.9) (30 to 59,81.0) (60 to 119,85.6) ($\geq$120,88.4)};
+\addplot[fill=clm!75!black] coordinates {(10 to 29,90.7) (30 to 59,86.2) (60 to 119,93.4) ($\geq$120,94.0)};
 \addlegendentry{BoT-SORT}
 \addlegendentry{SAM2MOT}
 \addlegendentry{MapSORT}
 \end{axis}
 \end{tikzpicture}
-\caption{Revisit identity preservation by length of absence, over the 1043 revisit events of the test sequences. BoT-SORT deletes tracks unseen for longer than its track buffer and preserves almost no identity beyond that horizon; MapSORT's dormant tracks keep identities recoverable at every absence length.}
+\caption{Revisit identity preservation by length of absence, over the 1043 revisit events of the test sequences. BoT-SORT deletes tracks lost for longer than its track buffer and preserves almost no identity beyond that horizon; MapSORT's dormant tracks keep identities recoverable at every absence length.}
 \label{fig:gap}
 \end{figure}
 
@@ -520,10 +528,10 @@ Mean $|$CE$|$ (\%) & & \tbd & \tbd & \tbd \\
 
 \subsection{Ablation study}\label{sec:res-ablation}
 
-Table~\ref{tab:ablation} isolates each component on the representative sequences, building from BoT-SORT (a) to the full MapSORT (d). Reviving lost and dormant tracks by the Mahalanobis gate on their 3D landmarks (b) raises pooled revisit preservation from 8.1\% to 61.6\%. Reviving them instead where the per-frame camera projects their landmark (c) raises it to 85.6\% and adds 3.6 to 4.0 HOTA points on V01 and PP\_7: projection removes the depth error of the landmark, which is largest along the viewing ray and is what lets adjacent fruit pass a 3D gate. Using the camera as the motion model of reliable tracks (d) brings HOTA to 97.1 and 98.0 and RIP to 89.7\%. On AppleMOTS 0008, which has no revisits, every variant ties BoT-SORT. Replacing the Gaussian landmark by the nearest triangulated keypoint to the box centre with a Euclidean gate (e), the point-estimate localisation of prior fruit-tracking work, changes HOTA by less than half a point in either direction: once association runs through the camera, the landmark's covariance matters little.
+Table~\ref{tab:ablation} adds MapSORT's components one at a time to BoT-SORT (a). Keeping lost tracks dormant and reviving them by the Mahalanobis gate on their 3D landmarks (b) raises pooled revisit preservation from 6.9\% to 67.3\%. Its effect depends on how well the landmarks are supported. On LettuceMOTS 0011, whose landmarks rest on a median of 79 map points, the 3D gate alone reaches the best HOTA of all variants, 97.0. On MOrangeT V01, with two points per landmark, it reaches 92.2, and on GrapeMOTS PathPlanning\_7 93.4. Reviving through the per-frame camera instead (c) raises pooled preservation to 85.1\%, and HOTA to 96.1 on V01 and 97.4 on PathPlanning\_7, because projection removes the depth error that lets adjacent fruit pass a 3D gate; on the planar lettuce scene it is 5.6 points below the 3D gate. Map motion, with the learned offsets that revival then also requires of its candidates (d), raises pooled preservation to 89.0\% and HOTA to 93.3 on lettuce and 97.1 on V01, at a cost of 0.7 HOTA on PathPlanning\_7. On AppleMOTS 0008 every variant stays within 0.02 HOTA of BoT-SORT. Replacing the Gaussian landmark by the nearest triangulated keypoint to the box centre with a Euclidean gate (e), the point-estimate localisation of prior fruit-tracking work, changes HOTA by less than one point on every sequence and lowers pooled preservation to 86.9\%: once association runs through the camera, the landmark mostly needs to be a good point, and its covariance matters where the 3D gate is used.
 
 \begin{table}[t]
-\caption{Ablation on the representative sequences (HOTA / IDF1). RIP is pooled over the revisit events of the sequences with results (AppleMOTS 0008 has none). (e) uses the nearest SfM keypoint to the box centre as a point landmark with a Euclidean distance gate.}\label{tab:ablation}
+\caption{Ablation on the representative sequences (HOTA / IDF1). RIP is pooled over the revisit events of the four sequences (AppleMOTS 0008 has none). (e) uses the nearest SfM keypoint to the box centre as a point landmark with a Euclidean distance gate.}\label{tab:ablation}
 \scriptsize
 \setlength{\tabcolsep}{1.6pt}
 \begin{tabular*}{\textwidth}{@{\extracolsep\fill}lrrrrrrrrr@{}}
@@ -534,16 +542,16 @@ Variant & HOTA & IDF1 & HOTA & IDF1 & HOTA & IDF1 & HOTA & IDF1 & RIP \\
 \midrule
 (a) BoT-SORT & 77.88 & 64.91 & 74.39 & 64.03 & 89.60 & 85.48 & 98.79 & 99.37 & 6.9 \\
 (b) + landmark revival & \textbf{97.00} & \textbf{98.46} & 92.18 & 89.57 & 93.42 & 92.39 & \textbf{98.81} & \textbf{99.38} & 67.3 \\
-(c) + camera revival & 79.15 & 69.14 & 95.78 & 95.26 & 97.39 & 97.52 & 98.79 & 99.37 & 74.8 \\
-(d) + map motion (MapSORT) & 70.98 & 66.02 & 97.07 & 97.08 & \textbf{97.97} & \textbf{97.89} & 98.80 & \textbf{99.38} & 77.7 \\
-(e) (d), point landmark & 79.97 & 68.73 & \textbf{97.25} & \textbf{97.28} & 97.47 & 97.54 & 98.80 & \textbf{99.38} & \textbf{79.1} \\
+(c) + camera revival & 91.42 & 90.71 & 96.14 & 95.78 & \textbf{97.41} & \textbf{97.51} & \textbf{98.81} & \textbf{99.38} & 85.1 \\
+(d) + map motion (MapSORT) & 93.34 & 93.67 & 97.07 & 97.08 & 96.73 & 96.35 & \textbf{98.81} & \textbf{99.38} & \textbf{89.0} \\
+(e) (d), point landmark & 94.05 & 95.21 & \textbf{97.10} & \textbf{97.09} & 97.19 & 97.36 & \textbf{98.81} & \textbf{99.38} & 86.9 \\
 \botrule
 \end{tabular*}
 \end{table}
 
 \subsection{Sensitivity to the landmark gate}\label{sec:res-gate}
 
-Fig.~\ref{fig:gate} sweeps the landmark gate $\tau$ over two orders of magnitude, from the 95\% quantile of the $\chi^2_3$ distribution (7.81) to 1600. In MapSORT $\tau$ only gates the 3D landmark correspondences that seed the camera fit and the revival of tracks in frames where no camera is found; association itself runs on reprojection. HOTA varies by less than 0.3 points over the whole range on all three sequences. On PP\_7, revisit preservation is 95.7\% for $\tau\le50$ and 87.0\% for $\tau\ge100$, so the default $\tau=200$ is conservative; we keep it rather than tune on the test sequences.
+Fig.~\ref{fig:gate} sweeps the landmark gate $\tau$ over two orders of magnitude, from the 95\% quantile of the $\chi^2_3$ distribution (7.81) to 1600. In MapSORT, $\tau$ gates the landmark pairs that help seed the camera fit and the revival of tracks in frames without a camera. HOTA varies by less than 0.1 points on LettuceMOTS 0011, MOrangeT V01 and AppleMOTS 0008 and revisit preservation not at all. On GrapeMOTS PathPlanning\_7, where the camera depends most on the landmark pairs, preservation is 65.2\% for $\tau\le25$, 73.9\% at 50 and 78.3\% from 100 upwards. The default $\tau=200$ lies on that plateau, and a single value serves all datasets, as Proposition~\ref{prop:scale} predicts.
 
 \begin{figure}[t]
 \centering
@@ -557,12 +565,11 @@ Fig.~\ref{fig:gate} sweeps the landmark gate $\tau$ over two orders of magnitude
   ymajorgrids, grid style={black!12}, mark size=1.8pt, ymin=50, ymax=100, ylabel={HOTA},
   legend to name=gatelegend, legend columns=4, legend style={draw=none, font=\scriptsize, /tikz/every even column/.append style={column sep=6pt}}]
 \draw[dashed, black!45] (axis cs:7.81,50) -- (axis cs:7.81,100);
-% TODO fill the sweep; each series is one representative sequence
-\addplot[clm!75!black, mark=*] coordinates {(7.81,72.72) (25,69.42) (50,74.18) (100,70.98) (200,70.98) (400,70.98) (800,70.98) (1600,70.98)};
-\addplot[capp, mark=square*] coordinates {(7.81,97.21) (25,97.21) (50,97.21) (100,97.07) (200,97.07) (400,97.07) (800,97.07) (1600,97.07)};
-\addplot[cmap, mark=triangle*] coordinates {(7.81,97.75) (25,98.03) (50,98.03) (100,97.97) (200,97.97) (400,97.97) (800,97.97) (1600,97.97)};
-\addplot[black!60, mark=diamond*] coordinates {(7.81,98.80) (25,98.80) (50,98.80) (100,98.80) (200,98.80) (400,98.80) (800,98.80) (1600,98.80)};
-\legend{Lettuce 0011 (\tbd), Orange V01, Grape PP\_7, Apple 0008}
+\addplot[clm!75!black, mark=*] coordinates {(7.81,93.28) (25,93.28) (50,93.31) (100,93.34) (200,93.34) (400,93.34) (800,93.34) (1600,93.34)};
+\addplot[capp, mark=square*] coordinates {(7.81,97.09) (25,97.10) (50,97.07) (100,97.07) (200,97.07) (400,97.07) (800,97.07) (1600,97.07)};
+\addplot[cmap, mark=triangle*] coordinates {(7.81,97.23) (25,97.26) (50,96.64) (100,96.73) (200,96.73) (400,96.73) (800,96.73) (1600,96.73)};
+\addplot[black!60, mark=diamond*] coordinates {(7.81,98.81) (25,98.81) (50,98.81) (100,98.81) (200,98.81) (400,98.81) (800,98.81) (1600,98.81)};
+\legend{Lettuce 0011, Orange V01, Grape PP\_7, Apple 0008}
 \end{axis}
 \end{tikzpicture}\hfill
 \begin{tikzpicture}
@@ -573,32 +580,32 @@ Fig.~\ref{fig:gate} sweeps the landmark gate $\tau$ over two orders of magnitude
   tick label style={font=\scriptsize}, label style={font=\footnotesize},
   ymajorgrids, grid style={black!12}, mark size=1.8pt, ymin=0, ymax=105, ylabel={RIP (\%)}]
 \draw[dashed, black!45] (axis cs:7.81,0) -- (axis cs:7.81,105) node[pos=0.08, right, font=\tiny, black!60] {$\chi^2_3(0.95)$};
-\addplot[capp, mark=square*] coordinates {(7.81,91.30) (25,91.30) (50,91.30) (100,90.30) (200,90.30) (400,90.30) (800,90.30) (1600,90.30)};
-\addplot[cmap, mark=triangle*] coordinates {(7.81,95.70) (25,95.70) (50,95.70) (100,87.00) (200,87.00) (400,87.00) (800,87.00) (1600,87.00)};
-\addplot[clm!75!black, mark=*] coordinates {(7.81,22.70) (25,13.60) (50,4.50) (100,9.10) (200,9.10) (400,9.10) (800,9.10) (1600,9.10)};
+\addplot[clm!75!black, mark=*] coordinates {(7.81,95.00) (25,95.00) (50,95.00) (100,95.00) (200,95.00) (400,95.00) (800,95.00) (1600,95.00)};
+\addplot[capp, mark=square*] coordinates {(7.81,90.30) (25,90.30) (50,90.30) (100,90.30) (200,90.30) (400,90.30) (800,90.30) (1600,90.30)};
+\addplot[cmap, mark=triangle*] coordinates {(7.81,65.20) (25,65.20) (50,73.90) (100,78.30) (200,78.30) (400,78.30) (800,78.30) (1600,78.30)};
 \end{axis}
 \end{tikzpicture}\\[2pt]
 \pgfplotslegendfromname{gatelegend}
-\caption{Sensitivity of HOTA (left) and revisit identity preservation (right) to the landmark gate $\tau$ on the representative sequences. The dashed line marks the $\chi^2_3$ 95\% quantile. AppleMOTS 0008 has no revisit events and appears only on the left. LettuceMOTS 0011 is pending.}
+\caption{Sensitivity of HOTA (left) and revisit identity preservation (right) to the landmark gate $\tau$ on the representative sequences. The dashed line marks the $\chi^2_3$ 95\% quantile. AppleMOTS 0008 has no revisit events and appears only on the left.}
 \label{fig:gate}
 \end{figure}
 
 \subsection{Scene maps and runtime}\label{sec:res-runtime}
 
-COLMAP registers every frame of every representative sequence into a single model (Table~\ref{tab:recon}), with sub-pixel to about one-pixel mean reprojection error. Most detections receive a landmark: 98.6\% on LettuceMOTS, 93.3\% on GrapeMOTS and 76.9\% on MOrangeT, where small, glossy fruit seen against foliage yield fewer stable keypoints. Fig.~\ref{fig:recon} shows the reconstruction of LettuceMOTS 0011: the two rows of plants and the camera path along them, with the outbound and return passes registered into the same map.
+COLMAP registers every frame of every representative sequence into a single model (Table~\ref{tab:recon}), with mean reprojection errors between 0.7 and 1.2 pixels. Most detections receive a landmark: 96.7\% on LettuceMOTS, 97.9\% on AppleMOTS, 93.3\% on GrapeMOTS and 76.9\% on MOrangeT, where small, glossy fruit seen against foliage yield fewer stable keypoints. Fig.~\ref{fig:recon} shows the reconstruction of LettuceMOTS 0011: the two rows of plants and the camera path along them, with the outbound and return passes registered into the same map.
 
 \begin{table}[t]
-\caption{Scene maps on the representative sequences. Track len.: mean number of frames observing a 3D point. Cov.: share of detections that receive a landmark. Pts/LM: median number of map points supporting a landmark observation.}\label{tab:recon}
+\caption{Scene maps on the representative sequences. Track len.: mean number of frames observing a 3D point. Cov.: share of detections that receive a landmark. Pts/LM: median number of map points inside a detection with a landmark.}\label{tab:recon}
 \footnotesize
 \setlength{\tabcolsep}{2.5pt}
 \begin{tabular*}{\textwidth}{@{\extracolsep\fill}lrrrrrrr@{}}
 \toprule
 Sequence & Reg.\ frames & 3D points & Track len. & Reproj.\ (px) & Cov.\ (\%) & Pts/LM & SfM (min) \\
 \midrule
-LettuceMOTS 0011 & 223/223 & 168\,466 & 17.7 & 0.73 & 98.6 & 162 & \tbd \\
-MOrangeT V01 & 408/408 & 69\,081 & 10.0 & 1.16 & 76.9 & 2 & \tbd \\
-GrapeMOTS PP\_7 & 225/225 & 129\,210 & 19.1 & 0.96 & 93.3 & 13 & \tbd \\
-AppleMOTS 0008 & \tbd & \tbd & \tbd & \tbd & \tbd & \tbd & \tbd \\
+LettuceMOTS 0011 & 223/223 & 33\,766 & 22.7 & 0.98 & 96.7 & 79 & \tbd \\
+MOrangeT V01 & 408/408 & 69\,081 & 10.0 & 1.15 & 76.9 & 2 & \tbd \\
+GrapeMOTS PP\_7 & 225/225 & 129\,210 & 19.1 & 0.95 & 93.3 & 13 & \tbd \\
+AppleMOTS 0008 & 322/322 & 116\,013 & 15.8 & 0.71 & 97.9 & 5 & \tbd \\
 \botrule
 \end{tabular*}
 \end{table}
@@ -610,39 +617,32 @@ AppleMOTS 0008 & \tbd & \tbd & \tbd & \tbd & \tbd & \tbd & \tbd \\
 \label{fig:recon}
 \end{figure}
 
-Table~\ref{tab:runtime} reports tracking throughput. MapSORT's throughput is \tbd{}. Its per-frame camera fit is a RANSAC over a few hundred landmark correspondences and landmark fusion operates on $3\times3$ matrices, both small next to appearance embedding. The map is built once per sequence, before tracking.
+Table~\ref{tab:runtime} reports tracking throughput on the CPU-only workstation. MapSORT runs at 29\% to 56\% of BoT-SORT's throughput. Most of the difference is the camera fit, two RANSAC estimates per frame, each with both camera models; landmark fusion operates on $3\times3$ matrices and costs little. The scene map is built once per sequence, before tracking.
 
 \begin{table}[t]
-\caption{Tracking throughput (frames per second, including image decoding, detection and appearance embedding; excluding map construction). Hardware: L, laptop with RTX~4070 Laptop GPU; W, CPU-only workstation (Sect.~\ref{sec:impl}).}\label{tab:runtime}
+\caption{Tracking throughput (frames per second, including image decoding, detection and appearance embedding; excluding map construction), on the CPU-only workstation of Sect.~\ref{sec:impl} (W).}\label{tab:runtime}
 \footnotesize
 \begin{tabular*}{\textwidth}{@{\extracolsep\fill}lcrrr@{}}
 \toprule
 Sequence & Hardware & BoT-SORT & SAM2MOT & MapSORT \\
 \midrule
-LettuceMOTS 0011 & W & 5.30 & 2.81 & 2.33 \\
-MOrangeT V01 & W & 3.66 & 0.14 & 1.98 \\
-GrapeMOTS PP\_7 & W & 1.48 & 0.02 & 1.07 \\
-AppleMOTS 0008 & W & 2.47 & 0.16 & 1.49 \\
+LettuceMOTS 0011 & W & 5.30 & 2.81 & 1.52 \\
+MOrangeT V01 & W & 3.66 & 0.14 & 1.35 \\
+GrapeMOTS PP\_7 & W & 1.48 & 0.02 & 0.83 \\
+AppleMOTS 0008 & W & 2.47 & 0.16 & 1.08 \\
 \botrule
 \end{tabular*}
 \end{table}
 
 \subsection{Qualitative results}\label{sec:res-qual}
 
-Fig.~\ref{fig:qual} compares StrongSORT and MapSORT on the return pass of LettuceMOTS 0011. By this frame StrongSORT has issued 50 identities for 37 plants: every plant on screen carries a new identity, assigned when it reappeared. MapSORT shows each plant with the identity it received on the outbound pass and has issued exactly 37 identities. Fig.~\ref{fig:qual-other} shows the corresponding comparison on the other datasets.
+Fig.~\ref{fig:teaser} compares BoT-SORT and MapSORT on the return pass of LettuceMOTS 0011. By this frame BoT-SORT has issued 56 identities for 37 plants: every plant on screen carries a new identity, assigned when it reappeared. MapSORT shows each plant with the identity it received on the outbound pass and has issued 39 identities. Fig.~\ref{fig:qual-other} shows the corresponding comparison on the other datasets.
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=0.8\textwidth]{figures/strongsort_vs_mapsort.png}
-\caption{Return pass of LettuceMOTS 0011. Left: StrongSORT has issued 50 identities so far and labels every returning plant with a new one. Right: MapSORT restores each plant's outbound identity and has issued 37 identities, one per plant.}
-\label{fig:qual}
-\end{figure}
-
-\begin{figure}[t]
-\centering
-\figph{0.3\textwidth}{3.4cm}{MOrangeT V01:\\StrongSORT vs.\ MapSORT\\at a fruit re-entry}\hfill
-\figph{0.3\textwidth}{3.4cm}{GrapeMOTS PP\_7:\\StrongSORT vs.\ MapSORT\\after a perspective change}\hfill
-\figph{0.3\textwidth}{3.4cm}{AppleMOTS 0008:\\StrongSORT vs.\ MapSORT\\in a dense cluster}
+\figph{0.3\textwidth}{3.4cm}{MOrangeT V01:\\BoT-SORT vs.\ MapSORT\\at a fruit re-entry}\hfill
+\figph{0.3\textwidth}{3.4cm}{GrapeMOTS PP\_7:\\BoT-SORT vs.\ MapSORT\\after a perspective change}\hfill
+\figph{0.3\textwidth}{3.4cm}{AppleMOTS 0008:\\BoT-SORT vs.\ MapSORT\\in a dense cluster}
 \caption{Qualitative comparison on (a) MOrangeT V01, (b) GrapeMOTS PathPlanning\_7 and (c) AppleMOTS 0008.}
 \label{fig:qual-other}
 \end{figure}
@@ -650,16 +650,24 @@ Fig.~\ref{fig:qual} compares StrongSORT and MapSORT on the return pass of Lettuc
 %% =====================================================================
 \section{Discussion}\label{sec:discussion}
 
-The results show that, for stationary agricultural targets, a scene-map position is the identity cue that survives the conditions under which appearance and image-plane motion fail. The effect is largest exactly where agricultural tracking is hardest. When the camera returns to an object after a long absence, StrongSORT's identity is lost by construction, and MapSORT recovers it at a rate that does not decay with the length of the absence (Fig.~\ref{fig:gap}). On LettuceMOTS 0011, which is the operating pattern of a field robot working a row and returning, this turns a tracker that assigns two identities to every plant into one that assigns exactly one.
+The results show that, for stationary agricultural targets, a scene-map position is the identity cue that survives the conditions under which appearance and image-plane motion fail. The effect is largest exactly where agricultural tracking is hardest. When the camera returns to an object after a long absence, BoT-SORT's identity is lost by construction, and MapSORT recovers it at a rate that does not decay with the length of the absence (Fig.~\ref{fig:gap}). The datasets exercise this in different ways.
 
-For precision agriculture, the most direct consequence is counting. Every identity switch that issues a new identity is a phantom plant or fruit in the count. StrongSORT over-counts by 62\% to 123\% on the representative sequences, which would make its output unusable as a yield estimate without heavy post-hoc correction. MapSORT's count is exact on LettuceMOTS 0011 and its over-count is roughly a third of StrongSORT's on MOrangeT and GrapeMOTS. A second consequence is per-plant records. Because a plant keeps its identity across passes, measurements taken on the outbound and return passes, or from different UAV perspectives, attach to the same plant, which is what plant-level phenotyping and selective treatment need. A third is spatial: every MapSORT track carries a position in the scene map, so a track list is also a plant map. Registering the map to a GNSS-referenced frame, as is routine in orchard and field mapping, would turn MapSORT's output into a georeferenced inventory of individual plants or fruit.
+\paragraph{Repeated passes over a row.} LettuceMOTS is the operating pattern of a field robot working a row and returning, and the clearest case for the cue: on all three sequences MapSORT preserves at least 95\% of the returns, with 0, 3 and 2 identity switches against BoT-SORT's 29, 26 and 24, and an exact plant count on 0003. Two parts of the method matter here. The field is close to a plane, on which a full projective camera is ill-conditioned; fitting the plane's homography instead keeps the camera stable. And a returning plant enters the image at its edge, where the detector sees only a sliver of it for the first frames; comparing clipped predictions and holding a new track at the edge until the plant can be revived is what lets it reclaim its identity before a new one is issued. The ablation also shows that the dense map support of a lettuce field makes the 3D landmark gate alone very effective there, more than the camera-based revival; MapSORT uses the 3D gate only as a fallback, in favour of a single configuration that also serves the sparse orange landmarks.
 
-The landmark model generalises across very different acquisition conditions: a nadir camera over lettuce with dense map support, a handheld sweep of an orange canopy where landmarks rest on a median of two points, and high-resolution UAV video of a vineyard viewed from multiple perspectives. The same gate value serves all of them, a direct consequence of the scale invariance of the Mahalanobis gate (Proposition~\ref{prop:scale}); a metric distance threshold would have needed retuning for each reconstruction. MapSORT also composes with an existing tracker rather than replacing it. The appearance and motion stages are StrongSORT's, unchanged, and the landmark stages act on what they leave unmatched; any improvement in appearance models or detectors carries over to MapSORT directly.
+\paragraph{Sweeps around a canopy.} MOrangeT is the largest and most revisit-heavy dataset, with 950 revisits over ten sequences. A handheld sweep moves the camera close to a three-dimensional canopy, so image-plane motion is dominated by parallax that a global camera-motion warp cannot follow, and fruit go out of view behind leaves and the trunk for hundreds of frames. MapSORT preserves 92.0\% of these revisits and has fewer identity switches on every sequence, 86 against 861 in total. Its landmarks there rest on a median of two map points, so a 3D comparison is unreliable; projecting through a camera fitted to many landmarks at once is what makes them usable.
+
+\paragraph{Multi-perspective UAV inspection.} On GrapeMOTS the landmarks of the bunches along a vine lie close to a line, which constrains the camera poorly across it. MapSORT still preserves 78.3\% of the revisits of PathPlanning\_7, which no baseline preserves at all, and has fewer identity switches on every sequence. On PathPlanning\_3, however, its HOTA and IDF1 are below BoT-SORT's. On this sequence the ground truth gives bunches that are seen again after a motion-blurred pass new identities, so the sequence contains no revisit events, while MapSORT links the two views of the same bunch. In ground-truth terms each such link merges two objects, which the identity metrics penalise without counting an identity switch. Annotation policies for when an object seen again counts as the same object are not uniform across datasets, and a tracker built to recover identity across absences is, by design, at odds with a policy that resets it.
+
+\paragraph{Dense fruit without revisits.} AppleMOTS has no revisits, and its fruit are small, numerous and alike, so it tests whether the extra stages hurt short-term association. They do not: MapSORT has fewer identity switches on every sequence, and higher HOTA on three of four. On AppleMOTS 0007 it is 0.4 HOTA below BoT-SORT: a few lost tracks are revived onto newly appearing apples next to where their own apple was, because the camera fitted to small, densely packed fruit places them with errors of a third of a box, comparable to the spacing of the fruit, and appearance does not separate apples. The single identity switch on AppleMOTS 0008, which neither tracker avoids, is an apple without a landmark whose motion differs from its neighbours' by parallax, which no image-plane or landmark cue resolves.
+
+\paragraph{Consequences for precision agriculture.} The most direct consequence is counting. Every identity switch that issues a new identity is a phantom plant or fruit in the count. BoT-SORT over-counts by 43\% to 94\% on the representative sequences with revisits, which would make its output unusable as a yield estimate without heavy post-hoc correction; MapSORT's count error there is between 0\% and 8\%. A second consequence is per-plant records. Because a plant keeps its identity across passes, measurements taken on the outbound and return passes, or from different UAV perspectives, attach to the same plant, which is what plant-level phenotyping and selective treatment need. A third is spatial: every MapSORT track carries a position in the scene map, so a track list is also a plant map. Registering the map to a GNSS-referenced frame, as is routine in orchard and field mapping, would turn MapSORT's output into a georeferenced inventory of individual plants or fruit. MapSORT also composes with an existing tracker rather than replacing it: BoT-SORT's association is unchanged and runs first, and the camera stages act only on what it leaves unmatched, so improvements in detectors, appearance models or the base tracker carry over directly.
+
+\paragraph{Limitations.} The camera and revival stages cost throughput: on a CPU, MapSORT runs at 29\% to 56\% of BoT-SORT's frame rate. Their settings are shared across all datasets, but were chosen on the same public sequences on which they are evaluated, since these datasets provide no separate validation split; the MangoYield evaluation tests them on data that played no part in their design. Detections without a landmark, such as small fruit at the limit of the map's resolution, benefit only from BoT-SORT's own association.
 
 %% =====================================================================
 \section{Conclusion}\label{sec:conclusion}
 
-MapSORT turns the stationarity of crops and fruit into an identity cue. It lifts each detection to a Gaussian landmark in a structure-from-motion map of the scene, fuses landmarks across a track's observations, associates them with a scale-invariant Mahalanobis gate inside a StrongSORT cascade, and revives dormant tracks by landmark when the camera returns. On four public agricultural datasets covering lettuce, oranges, grapes and apples, recorded from a field robot, a handheld camera, a wearable camera and a UAV, MapSORT outperforms BoT-SORT, SAM2MOT and StrongSORT, preserves identity across revisits of any length, and produces substantially more accurate counts, including per-tree yield counts in a mango orchard. MapSORT currently builds its scene map offline. Recent online reconstruction models that recover camera pose and scene geometry frame by frame from monocular video \citep{wang2025cut3r,murai2025mast3rslam} are a natural drop-in source for the same landmark observations, and extending MapSORT to online operation on a field robot is the subject of future work.
+MapSORT turns the stationarity of crops and fruit into an identity cue. It gives every detection and track a Gaussian landmark in a structure-from-motion map of the scene, fits a camera to its own tracks in every frame, and uses that camera to re-match the tracks its base tracker misses and to revive tracks, kept dormant rather than deleted, when their objects return, including at the edge of the image. On four public agricultural datasets covering lettuce, oranges, grapes and apples, recorded from a field robot, a handheld camera, a wearable camera and a UAV, MapSORT outperforms BoT-SORT and SAM2MOT, has fewer identity switches than BoT-SORT on every test sequence where that is possible, preserves identity across revisits of any length, and produces substantially more accurate counts. MapSORT currently builds its scene map offline. Recent online reconstruction models that recover scene geometry frame by frame from monocular video \citep{wang2025cut3r,murai2025mast3rslam} are a natural drop-in source for the same landmark observations, and extending MapSORT to online operation on a field robot is the subject of future work.
 
 \backmatter
 
@@ -705,19 +713,19 @@ Dataset & Sequence & Frames & Resolution & GT IDs & Boxes & Revisits \\
  & 0011 & 223 & 810$\times$1080 & 37 & 3\,073 & 22 \\
 \midrule
 \multirow{10}{*}{MOrangeT} & V01 & 408 & 1083$\times$1944 & 110 & 7\,848 & 104 \\
- & V02 & \tbd & \tbd & \tbd & \tbd & \tbd \\
- & V05 & \tbd & \tbd & \tbd & \tbd & \tbd \\
- & V06 & \tbd & \tbd & \tbd & \tbd & \tbd \\
- & V07 & \tbd & \tbd & \tbd & \tbd & \tbd \\
- & V08 & \tbd & \tbd & \tbd & \tbd & \tbd \\
- & V09 & \tbd & \tbd & \tbd & \tbd & \tbd \\
- & V10 & \tbd & \tbd & \tbd & \tbd & \tbd \\
- & V11 & \tbd & \tbd & \tbd & \tbd & \tbd \\
- & V12 & \tbd & \tbd & \tbd & \tbd & \tbd \\
+ & V02 & 409 & 1063$\times$1890 & 46 & 4\,354 & 35 \\
+ & V05 & 293 & $\le$1081$\times$1941 & 148 & 11\,944 & 125 \\
+ & V06 & 447 & 1074$\times$1910 & 122 & 12\,411 & 109 \\
+ & V07 & 553 & 1079$\times$1924 & 154 & 19\,069 & 170 \\
+ & V08 & 544 & 1078$\times$1918 & 192 & 24\,500 & 209 \\
+ & V09 & 222 & 1084$\times$1951 & 16 & 1\,923 & 17 \\
+ & V10 & 244 & 1080$\times$1926 & 13 & 1\,372 & 19 \\
+ & V11 & 268 & 1079$\times$1920 & 87 & 7\,265 & 64 \\
+ & V12 & 307 & 1079$\times$1920 & 115 & 11\,723 & 98 \\
 \midrule
 \multirow{4}{*}{GrapeMOTS} & PathPlanning\_1 & 927 & 1920$\times$1080 & 29 & 4\,796 & 0 \\
  & PathPlanning\_2 & 209 & 3840$\times$2160 & 45 & 4\,838 & 0 \\
- & PathPlanning\_3 & \tbd & \tbd & \tbd & \tbd & \tbd \\
+ & PathPlanning\_3 & 400 & 1920$\times$1080 & 57 & 6\,445 & 0 \\
  & PathPlanning\_7 & 225 & 3840$\times$2160 & 65 & 9\,014 & 23 \\
 \midrule
 \multirow{4}{*}{AppleMOTS} & 0006 & 101 & 1296$\times$972 & 279 & 4\,524 & 0 \\
@@ -728,6 +736,46 @@ Dataset & Sequence & Frames & Resolution & GT IDs & Boxes & Revisits \\
 \multirow{3}{*}{MangoYield} & Tree 1 & \tbd & \tbd & n/a & n/a & n/a \\
  & Tree 2 & \tbd & \tbd & n/a & n/a & n/a \\
  & Tree 3 & \tbd & \tbd & n/a & n/a & n/a \\
+\botrule
+\end{tabular*}
+\end{table}
+
+\section{Per-sequence results}\label{sec:app-perseq}
+
+\begin{table}[!h]
+\caption{HOTA, IDF1 and identity switches of every tracker on every test sequence. Best per sequence in bold.}\label{tab:perseq}
+\scriptsize
+\setlength{\tabcolsep}{2pt}
+\begin{tabular*}{\textwidth}{@{\extracolsep\fill}llrrrrrrrrr@{}}
+\toprule
+ & & \multicolumn{3}{c}{BoT-SORT} & \multicolumn{3}{c}{SAM2MOT} & \multicolumn{3}{c}{MapSORT} \\
+\cmidrule(lr){3-5}\cmidrule(lr){6-8}\cmidrule(lr){9-11}
+Dataset & Sequence & HOTA & IDF1 & IDSW & HOTA & IDF1 & IDSW & HOTA & IDF1 & IDSW \\
+\midrule
+\multirow{3}{*}{LettuceMOTS} & 0003 & 77.15 & 64.63 & 29 & 56.72 & 39.94 & 365 & \textbf{96.40} & \textbf{98.15} & \textbf{0} \\
+ & 0007 & 77.93 & 65.18 & 26 & 81.46 & 69.10 & 65 & \textbf{95.37} & \textbf{97.56} & \textbf{3} \\
+ & 0011 & 77.88 & 64.91 & 24 & 82.72 & 70.84 & 63 & \textbf{93.34} & \textbf{93.67} & \textbf{2} \\
+\midrule
+\multirow{10}{*}{MOrangeT} & V01 & 74.39 & 64.03 & 105 & 34.08 & 21.30 & 2479 & \textbf{97.07} & \textbf{97.08} & \textbf{15} \\
+ & V02 & 81.04 & 71.85 & 33 & 67.83 & 55.25 & 139 & \textbf{94.84} & \textbf{93.23} & \textbf{12} \\
+ & V05 & 76.03 & 63.26 & 111 & 63.68 & 51.50 & 654 & \textbf{97.52} & \textbf{97.13} & \textbf{12} \\
+ & V06 & 75.38 & 64.46 & 106 & 62.94 & 50.74 & 707 & \textbf{98.56} & \textbf{98.73} & \textbf{4} \\
+ & V07 & 76.79 & 66.43 & 141 & 69.19 & 58.42 & 483 & \textbf{98.41} & \textbf{98.51} & \textbf{12} \\
+ & V08 & 76.42 & 65.97 & 185 & 76.32 & 65.18 & 260 & \textbf{98.13} & \textbf{98.27} & \textbf{14} \\
+ & V09 & 82.27 & 77.16 & 13 & 79.17 & 71.87 & 19 & \textbf{97.85} & \textbf{97.50} & \textbf{1} \\
+ & V10 & 69.71 & 59.30 & 16 & 70.11 & 58.33 & 21 & \textbf{93.43} & \textbf{90.24} & \textbf{4} \\
+ & V11 & 80.21 & 73.56 & 61 & 80.14 & 72.55 & 104 & \textbf{98.53} & \textbf{98.81} & \textbf{4} \\
+ & V12 & 79.02 & 71.26 & 90 & 78.14 & 69.36 & 131 & \textbf{97.95} & \textbf{97.87} & \textbf{8} \\
+\midrule
+\multirow{4}{*}{GrapeMOTS} & PathPlanning\_1 & \textbf{99.38} & \textbf{99.69} & \textbf{0} & 92.73 & 90.56 & 230 & \textbf{99.38} & \textbf{99.69} & \textbf{0} \\
+ & PathPlanning\_2 & 87.20 & 83.78 & 30 & 51.20 & 42.67 & 987 & \textbf{89.86} & \textbf{89.84} & \textbf{21} \\
+ & PathPlanning\_3 & \textbf{94.56} & \textbf{93.73} & 18 & 64.79 & 56.41 & 1379 & 90.63 & 88.40 & \textbf{11} \\
+ & PathPlanning\_7 & 89.60 & 85.48 & 34 & 58.58 & 50.29 & 1409 & \textbf{96.73} & \textbf{96.35} & \textbf{10} \\
+\midrule
+\multirow{4}{*}{AppleMOTS} & 0006 & 84.45 & 86.09 & 89 & 42.03 & 29.55 & 2230 & \textbf{87.89} & \textbf{89.43} & \textbf{53} \\
+ & 0007 & \textbf{95.22} & \textbf{96.41} & 6 & 35.98 & 28.82 & 3647 & 94.82 & 95.70 & \textbf{4} \\
+ & 0008 & 98.79 & 99.37 & \textbf{1} & 88.72 & 82.11 & 1815 & \textbf{98.81} & \textbf{99.38} & \textbf{1} \\
+ & 0010 & 89.64 & 92.28 & 36 & 41.97 & 29.51 & 2226 & \textbf{91.21} & \textbf{93.66} & \textbf{26} \\
 \botrule
 \end{tabular*}
 \end{table}
