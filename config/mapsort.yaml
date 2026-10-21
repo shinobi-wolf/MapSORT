@@ -32,29 +32,29 @@ pipeline:
   mapping: {}  # stub — returns no landmarks until the CUT3R module lands
 
   tracker:
-    # -> boxmot StrongSortConfig
-    strongsort:
-      min_conf: 0.6
-      det_thresh: 0.3
-      max_age: 30
-      max_obs: 50
-      min_hits: 3
-      n_init: 3
-      iou_threshold: 0.3
-      asso_func: iou  # iou | giou | diou | ciou | hmiou | centroid
-      max_cos_dist: 0.4
-      max_iou_dist: 0.7
-      nn_budget: 100
-      mc_lambda: 0.98  # appearance weight in the appearance/motion cost blend
-      ema_alpha: 0.9  # previous-embedding weight in feature smoothing
+    # -> boxmot BotSortConfig; MapSORT keeps BoT-SORT's own association as its first stage
+    botsort: {}
 
-    # -> MapSort's landmark association; enabled: false is plain StrongSORT
+    # -> MapSort's landmark stages; enabled: false is plain BoT-SORT
     landmarks:
       enabled: true
-      gate: 200  # tuned, not chi2inv95[3] (7.8147): the SfM covariance is ~12x too tight in sd
-      use_appearance: true  # false drops the appearance stage: landmark, then IoU
+      gate: 200  # squared Mahalanobis: camera correspondences, and revival when no camera is found
+      short_gate: 10  # the same against a lost track's latest observation, when no camera is found
+      reprojection: 1.0  # revival gate on reprojection error, in box sizes; null = landmark gate only
+      camera:
+        # RANSAC DLT on matched tracks' landmarks and box centres, one camera per frame
+        iters: 300
+        inlier: 0.5  # box sizes
+        min_inliers: 8
+        seed: 0
+      map_motion:
+        # a reliable track is placed where the camera projects its landmark, plus its learned offset
+        enabled: true
+        min_offsets: 2
+        max_residual: 0.3  # box sizes
+        alpha: 0.3
       dormancy:
-        # lets a revisit longer than max_age frames reclaim its id
+        # lets a revisit longer than BoT-SORT's track buffer reclaim its id
         enabled: true
         max_dormant: null  # null = unbounded
 

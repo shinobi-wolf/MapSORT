@@ -38,6 +38,7 @@ models:
 
   mapsort:
     impl: mapsort
-    hp:
+    hp:  # BoT-SORT base at the botsort defaults; frame_rate is per-sequence, set by the runner
       landmarks:
         gate: 200  # universal across datasets
+        reprojection: 1.0  # box sizes

@@ -62,7 +62,7 @@ def run_sequence(
     early when the window asks it to -- so the caller must treat the number of
     tracks returned as the number of frames actually processed, not `limit`.
     """
-    pipeline = MapSORT(config_path)
+    pipeline = MapSORT(config_path, frame_rate=int(seq.info["frameRate"]))
     drawing = window is not None or video_path is not None
 
     stored = seq.stored_detections(limit=limit) if detections == "stored" else None

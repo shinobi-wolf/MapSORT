@@ -29,12 +29,13 @@ class MapSORT:
     position in the map frame, and associating detections into identity-persistent tracks.
     """
 
-    def __init__(self, config_path: str | Path = DEFAULT_CONFIG) -> None:
+    def __init__(self, config_path: str | Path = DEFAULT_CONFIG, frame_rate: int | None = None) -> None:
         self.config = yaml.safe_load(Path(config_path).read_text())["pipeline"]
 
         self.detector = Detector(**self.config["detector"])
         self.mapping = Mapping(**self.config["mapping"])
-        self.tracker = Tracker(**self.config["tracker"])
+        # BoT-SORT scales its lost-track buffer by the sequence's frame rate.
+        self.tracker = Tracker(**self.config["tracker"], frame_rate=frame_rate)
 
     def step(
         self,

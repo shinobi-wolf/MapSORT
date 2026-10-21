@@ -19,5 +19,5 @@ class Mapping:
         pass
 
     def __call__(self, frame_idx: int, frame: np.ndarray, detections: list[Detection]) -> list[LandmarkObservation]:
-        # Placeholder: StrongSORT doesn't consume landmarks, so emit none for now.
+        # Placeholder until the online backend lands; stored landmarks are passed to the Tracker directly.
         return []

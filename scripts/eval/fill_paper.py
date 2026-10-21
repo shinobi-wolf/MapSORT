@@ -172,9 +172,6 @@ def fill_gap(tex: str) -> str:
     order = ("StrongSORT", "BoT-SORT", "SAM2MOT", "MapSORT")
     present = [t for t in order if any(r["tracker"] == t for r in rows)]
     missing = [t for t in order if t not in present]
-    if "MapSORT" not in present:
-        print("fig:gap left as is: no MapSORT bins yet")
-        return tex
     start, end = env(tex, "fig:gap")
     block = tex[start:end]
     # Plots sit between the axis options' closing "]" line and \end{axis}.

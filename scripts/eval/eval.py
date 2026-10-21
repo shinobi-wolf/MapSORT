@@ -64,12 +64,12 @@ HARDWARE = {"shinobi-owl": "L", "shinobi-wolf": "W"}
 # Overrides of the main MapSORT block; `source` picks landmarks/<seq>/<source>.npz.
 EUCLIDEAN_GATE_RADII = 1.0  # TODO: prior work's threshold, in median object radii (sfm_point.npz `scale`)
 ABLATIONS = {
-    "(a) StrongSORT": {"hp": {"landmarks": {"enabled": False}}},
-    "(b) + landmark assoc.": {"hp": {"landmarks": {"dormancy": {"enabled": False}}}},
-    "(c) + dormancy (MapSORT)": {},
-    "(d) (c) w/o appearance": {"hp": {"landmarks": {"use_appearance": False}}},
-    "(e) (c), point landmark": {
-        "hp": {"landmarks": {"distance": "euclidean", "gate": EUCLIDEAN_GATE_RADII}},
+    "(a) BoT-SORT": {"hp": {"landmarks": {"enabled": False}}},
+    "(b) + landmark revival": {"hp": {"landmarks": {"reprojection": None, "map_motion": {"enabled": False}}}},
+    "(c) + camera revival": {"hp": {"landmarks": {"map_motion": {"enabled": False}}}},
+    "(d) + map motion (MapSORT)": {},
+    "(e) (d), point landmark": {
+        "hp": {"landmarks": {"distance": "euclidean", "gate": EUCLIDEAN_GATE_RADII, "short_gate": EUCLIDEAN_GATE_RADII}},
         "source": "sfm_point",
     },
 }
@@ -117,6 +117,17 @@ def suffix(iou: float) -> str:
 
 
 # ── inputs ─────────────────────────────────────────────────────────────────────
+
+
+def present(dataset: str, names: list[str]) -> list[Sequence]:
+    """The listed sequences whose MOT view exists on this machine."""
+    out = []
+    for name in names:
+        try:
+            out.append(sequence(dataset, "test", name))
+        except FileNotFoundError:
+            pass
+    return out
 
 
 def reid_model(seq: Sequence) -> str:
@@ -233,10 +244,13 @@ def run_mapsort(seq: Sequence, spec: dict) -> list[Track]:
     if landmarks["enabled"]:
         stored = seq.stored_landmarks(spec["source"])
         if landmarks.get("distance") == "euclidean":
-            landmarks["gate"] *= float(np.load(seq.landmark_path(spec["source"]))["scale"])
+            scale = float(np.load(seq.landmark_path(spec["source"]))["scale"])
+            for key in ("gate", "short_gate"):
+                if key in landmarks:
+                    landmarks[key] *= scale
 
     reid = encoder_for(seq, spec["live"])
-    tracker = Tracker(strongsort=hp.get("strongsort"), reid=reid, landmarks=landmarks)
+    tracker = Tracker(botsort=hp.get("botsort"), reid=reid, landmarks=landmarks, frame_rate=int(seq.info["frameRate"]))
     dets = seq.stored_detections()
     for i, frame in enumerate(frames(seq)):
         if isinstance(reid, CachedEncoder):
@@ -529,12 +543,19 @@ def main() -> None:
     sys.stdout, sys.stderr = Tee(sys.stdout, log), Tee(sys.stderr, log)
     print(f"{stamp()}  {socket.gethostname()}  {' '.join(sys.argv)}  -> {run_dir}", flush=True)
     scorer = Scorer(run_dir, metrics, no_run=args.no_run)
-    test = {
-        ds: [sequence(ds, "test", s) for s in spec["splits"]["test"]]
-        for ds, spec in registry().items()
-        if not args.datasets or ds in args.datasets
+    test, complete = {}, {}
+    for ds, spec in registry().items():
+        if args.datasets and ds not in args.datasets:
+            continue
+        test[ds] = present(ds, spec["splits"]["test"])
+        complete[ds] = len(test[ds]) == len(spec["splits"]["test"])
+        if not complete[ds]:
+            print(f"{ds}: {len(test[ds])}/{len(spec['splits']['test'])} test sequences on this machine; "
+                  "pooled tables (main, gap) skip it", flush=True)
+    reps = {
+        ds: seq for ds, seqs in test.items() if ds in REPRESENTATIVE
+        for seq in seqs if seq.name == REPRESENTATIVE[ds][0]
     }
-    reps = {ds: sequence(ds, "test", REPRESENTATIVE[ds][0]) for ds in test if ds in REPRESENTATIVE}
     main_specs = {name: model_spec(models, name) for name in run_models}
     if "mapsort" not in run_models:
         args.tables = [t for t in args.tables if t not in ("ablation", "gate")]
@@ -542,6 +563,8 @@ def main() -> None:
     if "main" in args.tables:
         rows = []
         for ds, seqs in test.items():
+            if not complete[ds]:
+                continue
             for name, spec in main_specs.items():
                 r = scorer.score(spec, seqs)
                 if r is None:
@@ -599,7 +622,9 @@ def main() -> None:
                 })
         merge_csv("fig_gate.csv", ["sequence", "gate"], rows)
 
-    if "gap" in args.tables:
+    if "gap" in args.tables and not all(complete.values()):
+        print("gap: skipped, pooled over every test sequence")
+    elif "gap" in args.tables:
         edges, rows = metrics["revisit"]["gap_bins"], []
         for name, spec in main_specs.items():
             results = [scorer.score(spec, seqs) for seqs in test.values()]

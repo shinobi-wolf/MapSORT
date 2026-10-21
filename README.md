@@ -26,7 +26,8 @@ I_t ─> Detector ─> D_t ─┬─> Tracker ─> T (running tracks)
 | [mapsort/main.py](mapsort/main.py) | `MapSORT`: config, modules, per-frame loop. |
 | [mapsort/detector.py](mapsort/detector.py) | `Detector`: Ultralytics YOLO wrapper. |
 | [mapsort/mapping.py](mapsort/mapping.py) | `Mapping`: online landmark estimator. **Stub** — the `sfm` backend's data exists on disk but nothing reads it yet. |
-| [mapsort/tracker.py](mapsort/tracker.py) | `Tracker`: boxmot `StrongSort`. Ignores landmarks for now. |
+| [mapsort/tracker.py](mapsort/tracker.py) | `Tracker`: `MapSort`, boxmot `BotSort` plus camera-based landmark association and dormant revival; `landmarks.enabled: false` is plain BoT-SORT. |
+| [mapsort/camera.py](mapsort/camera.py) | Per-frame camera resection (RANSAC DLT) from tracked landmarks and their boxes. |
 | [mapsort/schemas.py](mapsort/schemas.py) | `Detection`, `LandmarkObservation`, `Track`. |
 | [mapsort/data.py](mapsort/data.py) | Dataset access from [config/datasets.yaml](config/datasets.yaml): `sequence(dataset, split, name)`. |
 | [mapsort/run.py](mapsort/run.py) | The `mapsort` command: run a split, `--eval` to score, `--viz` to watch. |
@@ -143,7 +144,7 @@ mapsort --split test --detections stored --eval
 | Module | State |
 |---|---|
 | Detector | Working (YOLOv8); needs crop-specific weights. |
-| Tracker | Working (StrongSORT); ignores landmarks. |
+| Tracker | Working: BoT-SORT plus a per-frame camera resected from tracked landmarks, which places and revives stationary tracks where their landmarks project. |
 | Mapping | Stub. `sfm` landmarks built for 0011 from COLMAP; no backend reads them yet. CUT3R ran offline on 0011, not integrated. |
 | Evaluation | Tracking metrics done; mapping metrics not started (only 0011 has a reconstruction). |
 | Data | All 12 LettuceMOTS sequences in the MOT view, dets from GT. LFSD and mango not added. |
