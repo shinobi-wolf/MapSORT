@@ -42,17 +42,27 @@ pipeline:
       short_gate: 10  # the same against a lost track's latest observation, when no camera is found
       reprojection: 1.0  # revival gate on reprojection error, in box sizes; null = landmark gate only
       camera:
-        # RANSAC DLT on matched tracks' landmarks and box centres, one camera per frame
+        # RANSAC on matched tracks' landmarks and box centres, one camera per frame: a full DLT camera, or
+        # the homography of the landmarks' plane unless the full camera explains clearly more of them
         iters: 300
         inlier: 0.5  # box sizes
         min_inliers: 8
+        planar_margin: 0.1
         seed: 0
       map_motion:
-        # a reliable track is placed where the camera projects its landmark, plus its learned offset
+        # a reliable track BoT-SORT left unmatched is tried again where the camera projects its landmark,
+        # plus its learned offset
         enabled: true
         min_offsets: 2
         max_residual: 0.3  # box sizes
         alpha: 0.3
+      revival:
+        edge:
+          # a detection cut by the frame edge must overlap the clipped prediction; a new track there waits
+          # this many frames for a revival before it is reported
+          iou: 0.3
+          visible: 0.5
+          wait: 8
       dormancy:
         # lets a revisit longer than BoT-SORT's track buffer reclaim its id
         enabled: true

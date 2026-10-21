@@ -34,6 +34,7 @@ class MapTrack(STrack):
         self.offset = np.zeros(2)  # box centre minus projected landmark, in box sizes (EMA)
         self.offsets = 0
         self.residual = 1.0  # EMA of the offset-corrected reprojection error, in box sizes
+        self.wh = np.asarray(self.xywh[2:4], dtype=float).copy()  # last width, height not cut by the frame edge
 
     def fuse(self, observation: LandmarkObservation) -> None:
         self.landmark.fuse(observation)
@@ -41,14 +42,20 @@ class MapTrack(STrack):
         self.last.fuse(observation)
 
 
+def _cut(xywh: np.ndarray, w: float, h: float) -> np.ndarray:
+    """Whether each xywh box [N, 4] touches the frame edge."""
+    lo, hi = xywh[:, :2] - xywh[:, 2:] / 2, xywh[:, :2] + xywh[:, 2:] / 2
+    return (lo <= 1).any(1) | (hi[:, 0] >= w - 1) | (hi[:, 1] >= h - 1)
+
+
 class MapSort(BotSort):
     """BoT-SORT whose stationary tracks are located through the frame's camera.
 
     Each frame the camera is resected from the tracks BoT-SORT matched (plus 3D nearest-neighbour
-    landmark pairs), reliable tracks are re-associated where it projects their landmarks, and lost
-    and dormant tracks are revived where theirs project. Without a camera, lost and dormant tracks
-    fall back to the Mahalanobis gate. `observations` holds the frame's landmark observations,
-    parallel to its detections, and is set by the caller before each update.
+    landmark pairs). Reliable tracks the first stage left unmatched are tried again where it projects
+    their landmarks, and lost and dormant tracks are revived where theirs project. Without a camera,
+    lost and dormant tracks fall back to the Mahalanobis gate. `observations` holds the frame's landmark
+    observations, parallel to its detections, and is set by the caller before each update.
     """
 
     def __init__(
@@ -60,6 +67,7 @@ class MapSort(BotSort):
         reprojection: float | None = 1.0,
         camera: dict | None = None,
         map_motion: dict | None = None,
+        revival: dict | None = None,
         dormancy: dict | None = None,
         **kwargs,
     ) -> None:
@@ -74,17 +82,24 @@ class MapSort(BotSort):
         self.camera_iters = int(camera.get("iters", 300))
         self.camera_inlier = float(camera.get("inlier", 0.5))
         self.camera_min = int(camera.get("min_inliers", 8))
+        self.planar_margin = float(camera.get("planar_margin", 0.1))
         self.rng = np.random.default_rng(camera.get("seed", 0))
         map_motion = map_motion or {}
         self.map_motion = bool(map_motion.get("enabled", True))
         self.min_offsets = int(map_motion.get("min_offsets", 2))
         self.max_residual = float(map_motion.get("max_residual", 0.3))
         self.offset_alpha = float(map_motion.get("alpha", 0.3))
+        revival = revival or {}
+        edge = revival.get("edge") or {}
+        self.edge_iou = float(edge.get("iou", 0.3))
+        self.edge_visible = float(edge.get("visible", 0.5))
+        self.edge_wait = int(edge.get("wait", 8))  # frames a new track at the edge may wait for a revival
         dormancy = dormancy or {}
         self.dormancy = bool(dormancy.get("enabled", True))
         self.max_dormant = dormancy.get("max_dormant")
         self.dormant: list[MapTrack] = []
         self._revived: set[int] = set()
+        self._waiting: set[int] = set()
         self._camera_prev: np.ndarray | None = None
         self._camera: np.ndarray | None = None
         self.observations: list[LandmarkObservation | None] = []
@@ -119,7 +134,7 @@ class MapSort(BotSort):
         x = np.array([d.xywh[:2] for _, d in pairs])
         size = np.array([np.sqrt(d.xywh[2] * d.xywh[3]) for _, d in pairs])
         P = resect(X, x, size, self.rng, iters=self.camera_iters, inlier=self.camera_inlier,
-                   min_inliers=self.camera_min, prior=self._camera_prev)
+                   min_inliers=self.camera_min, prior=self._camera_prev, planar_margin=self.planar_margin)
         if P is not None:
             self._camera_prev = P
         return P
@@ -163,34 +178,38 @@ class MapSort(BotSort):
         ]
 
     def _first_association(self, dets, dets_first, active_tracks, unconfirmed, img, detections, activated, refind, strack_pool):
-        """BoT-SORT's first stage, re-solved with reliable tracks placed where the camera projects them."""
+        """BoT-SORT's first stage, then its leftovers re-solved with reliable tracks where the camera places them."""
         STrack.multi_predict(strack_pool, dt=self._prediction_dt)
         self._apply_camera_motion_compensation(dets, img, strack_pool, unconfirmed)
         stage = AssociationStage(name="botsort_high", cost=self._first_association_cost, threshold=self.match_thresh)
-        first = np.asarray(run_association_stage(stage, strack_pool, detections).matches, dtype=int).reshape(-1, 2)
-        matches = first
-        pairs = [(strack_pool[i], detections[j]) for i, j in first] + self._landmark_pairs(strack_pool, detections)
+        matches = np.asarray(run_association_stage(stage, strack_pool, detections).matches, dtype=int).reshape(-1, 2)
+        pairs = [(strack_pool[i], detections[j]) for i, j in matches] + self._landmark_pairs(strack_pool, detections)
         self._camera = self._resect(pairs) if (self.map_motion or self.reprojection is not None) else None
 
-        if self.map_motion and self._camera is not None and len(strack_pool) and len(detections):
-            moved = {}
+        if self.map_motion and self._camera is not None:
+            rows, cols = set(matches[:, 0].tolist()), set(matches[:, 1].tolist())
+            left = [j for j in range(len(detections)) if j not in cols]
+            placed, kalman = [], []
             for i, t in enumerate(strack_pool):
-                if not self._reliable(t):
+                if i in rows or not self._reliable(t):
                     continue
                 size = np.sqrt(max(t.mean[2] * t.mean[3], 1e-6))
                 centre = project(self._camera, t.landmark.gaussian[0][None])[0] + t.offset * size
                 if np.isfinite(centre).all():
-                    moved[i] = t.mean.copy()
+                    kalman.append(t.mean.copy())
                     t.mean[:2] = centre
-            second, _, _ = linear_assignment(self._first_association_cost(strack_pool, detections), self.match_thresh)
-            second = np.asarray(second, dtype=int).reshape(-1, 2)
-            # A first-stage pair whose track and detection the second left unmatched is kept as it was.
-            rows, cols = set(second[:, 0].tolist()), set(second[:, 1].tolist())
-            kept = [(i, j) for i, j in first if i not in rows and j not in cols]
-            for i, _ in kept:
-                if i in moved:
-                    strack_pool[i].mean = moved[i]
-            matches = np.array(second.tolist() + kept, dtype=int).reshape(-1, 2)
+                    placed.append(i)
+            extra = []
+            if placed and left:
+                cost = self._first_association_cost([strack_pool[i] for i in placed], [detections[j] for j in left])
+                found, _, _ = linear_assignment(cost, self.match_thresh)
+                extra = [(placed[a], left[b]) for a, b in np.asarray(found, dtype=int).reshape(-1, 2)]
+            # A track still unmatched keeps BoT-SORT's own prediction.
+            moved = {i for i, _ in extra}
+            for i, mean in zip(placed, kalman):
+                if i not in moved:
+                    strack_pool[i].mean = mean
+            matches = np.array(matches.tolist() + extra, dtype=int).reshape(-1, 2)
 
         tracked, lost = [], []
         for i, j in matches:
@@ -217,7 +236,11 @@ class MapSort(BotSort):
         track._finish_reactivate(detection, self.frame_count, False)
 
     def _reproject(self, P, shape, lost_tracks, detections, pool):
-        """Revive lost and dormant tracks where their landmarks project, inside the frame."""
+        """Revive lost and dormant tracks where their landmarks project.
+
+        Each candidate's box, at its last full size and clipped to the frame as the detector sees it, is
+        compared with the unmatched detections, so an object re-entering at the edge can be revived.
+        """
         sleeping = [t for t in self.dormant if t.state == TrackState.Removed] if self.dormancy else []
         if self.map_motion:
             # A track whose landmark has rarely been seen in its box is not trusted to revive.
@@ -226,20 +249,32 @@ class MapSort(BotSort):
         candidates = lost_tracks + sleeping
         if not candidates or not pool:
             return [], pool
-        predicted = project(P, np.array([t.landmark.gaussian[0] for t in candidates]))
         h, w = shape
-        visible = np.isfinite(predicted).all(1) & (predicted[:, 0] >= 0) & (predicted[:, 0] < w) \
-            & (predicted[:, 1] >= 0) & (predicted[:, 1] < h)
-        dets = [detections[j] for j in pool]
-        centre = np.array([d.xywh[:2] for d in dets])
-        size = np.array([np.sqrt(d.xywh[2] * d.xywh[3]) for d in dets])
+        wh = np.array([t.wh for t in candidates], dtype=float)
+        size = np.sqrt(wh.prod(1))
         offset = np.array([t.offset if (self.map_motion and t.offsets) else np.zeros(2) for t in candidates])
-        err = np.linalg.norm(predicted[:, None] + offset[:, None] * size[None, :, None] - centre[None], axis=2) / size
+        centre = project(P, np.array([t.landmark.gaussian[0] for t in candidates])) + offset * size[:, None]
+        lo, hi = np.clip(centre - wh / 2, 0, [w, h]), np.clip(centre + wh / 2, 0, [w, h])
+        with np.errstate(invalid="ignore"):
+            visible = np.isfinite(centre).all(1) & ((hi - lo) > 0).all(1)
+        dets = [detections[j] for j in pool]
+        box = np.array([d.xywh for d in dets], dtype=float)
+        err = np.linalg.norm((lo + hi)[:, None] / 2 - box[None, :, :2], axis=2) / size[:, None]
         err = np.where(visible[:, None], np.nan_to_num(err, nan=_NO), _NO)
+        dlo, dhi = box[:, :2] - box[:, 2:] / 2, box[:, :2] + box[:, 2:] / 2
+        inter = np.clip(np.minimum(hi[:, None], dhi[None]) - np.maximum(lo[:, None], dlo[None]), 0, None).prod(2)
+        # A detection cut by the frame edge only shows a sliver: it must overlap the clipped prediction, which in
+        # turn must be mostly inside the frame.
+        cut = _cut(box, w, h)
+        if cut.any():
+            iou = inter / np.maximum((hi - lo).prod(1)[:, None] + box[:, 2:].prod(1)[None] - inter, 1e-9)
+            inside = (hi - lo).prod(1) / np.maximum(wh.prod(1), 1e-9)
+            err = np.where(cut[None] & ((iou < self.edge_iou) | (inside[:, None] < self.edge_visible)), _NO, err)
+        # A new track on a detection that one of these tracks could be waits for its revival.
+        cover = inter / np.maximum(box[:, 2:].prod(1)[None], 1e-9)
+        self._waiting = {int(d.det_ind) for d, ok in zip(dets, ((cover >= 0.5) & visible[:, None]).any(0)) if ok}
         matches, _, left = linear_assignment(err, self.reprojection)
-        revived = []
-        for i, j in np.asarray(matches, dtype=int).reshape(-1, 2):
-            revived.append((candidates[i], dets[j], i >= len(lost_tracks)))
+        revived = [(candidates[i], dets[j], i >= len(lost_tracks)) for i, j in np.asarray(matches, dtype=int).reshape(-1, 2)]
         return revived, [pool[j] for j in left]
 
     def _landmark_revive(self, lost_tracks, detections, pool):
@@ -260,8 +295,24 @@ class MapSort(BotSort):
             pool = [pool[j] for j in left]
         return revived, pool
 
+    def _handle_unconfirmed_tracks(self, u_detection, detections, activated, removed, unconfirmed):
+        out = super()._handle_unconfirmed_tracks(u_detection, detections, activated, removed, unconfirmed)
+        if self.edge_wait and self._waiting:
+            # A track born at the frame edge where a revival is expected stays unconfirmed, and unreported,
+            # until the object shows enough of itself to be revived or the wait runs out.
+            h, w = self._shape
+            by_index = {int(d.det_ind): d for d in detections}
+            for t in unconfirmed:
+                d = by_index.get(int(t.det_ind))
+                if (t.is_activated and t.frame_id == self.frame_count and d is not None
+                        and self.frame_count - t.start_frame < self.edge_wait and int(d.det_ind) in self._waiting
+                        and _cut(d.xywh[None], w, h)[0]):
+                    t.is_activated = False
+        return out
+
     def _track_detections(self, dets, img, embs=None, masks=None):
         self.frame_count += 1
+        self._shape, self._waiting = img.shape[:2], set()
         activated, refind, lost, removed = [], [], [], []
 
         dets, dets_first, first_batch, dets_second = self._split_detections(dets, embs)
@@ -306,6 +357,11 @@ class MapSort(BotSort):
         P = P if P is not None else self._camera
         if self.map_motion and P is not None:
             self._learn_offsets(P, detections)
+        h, w = img.shape[:2]
+        for t, d in self._matched_pairs(detections):
+            # A box cut by the frame edge understates the object, so it only ever grows the remembered size.
+            wh = np.asarray(d.xywh[2:4], dtype=float)
+            t.wh = np.maximum(t.wh, wh) if _cut(d.xywh[None], w, h)[0] else wh.copy()
         for track in self.active_tracks:
             if track.frame_id == self.frame_count and track.state == TrackState.Tracked:
                 observation = self._observation(track.det_ind)
