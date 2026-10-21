@@ -27,7 +27,6 @@ import socket
 import subprocess
 import sys
 import time
-from dataclasses import fields
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -51,7 +50,7 @@ DATASET_NAMES = {
     "grapemots": "GrapeMOTS",
     "applemots": "AppleMOTS",
 }
-MODEL_NAMES = {"botsort": "BoT-SORT", "sam2mot": "SAM2MOT", "strongsort": "StrongSORT", "mapsort": "MapSORT"}
+MODEL_NAMES = {"botsort": "BoT-SORT", "sam2mot": "SAM2MOT", "mapsort": "MapSORT"}
 # dataset -> (sequence, ablation column prefix)
 REPRESENTATIVE = {
     "lettucemots": ("0011", "lettuce0011"),
@@ -260,22 +259,14 @@ def run_mapsort(seq: Sequence, spec: dict) -> list[Track]:
 
 
 def run_boxmot(seq: Sequence, spec: dict) -> list[Track]:
-    """A vendored-boxmot tracker at its config defaults plus `hp`."""
-    import importlib
-
+    """Vendored-boxmot BoT-SORT at its config defaults plus `hp`."""
     from boxmot import ReIDConfig, create_tracker
+    from boxmot.trackers.botsort.config import BotSortConfig
 
-    name = spec["tracker"]
-    config_cls = getattr(
-        importlib.import_module(f"boxmot.trackers.{name}.config"),
-        {"strongsort": "StrongSortConfig", "botsort": "BotSortConfig"}[name],
-    )
-    params = dict(spec["hp"])
-    if "frame_rate" in {f.name for f in fields(config_cls)}:
-        params["frame_rate"] = int(seq.info["frameRate"])
+    params = {**spec["hp"], "frame_rate": int(seq.info["frameRate"])}
     reid = encoder_for(seq, spec["live"])
     tracker = create_tracker(
-        name, config=config_cls(**params), reid=ReIDConfig(**reid) if isinstance(reid, dict) else reid
+        spec["tracker"], config=BotSortConfig(**params), reid=ReIDConfig(**reid) if isinstance(reid, dict) else reid
     )
 
     dets = seq.stored_detections()

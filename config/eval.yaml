@@ -19,10 +19,6 @@ metrics:
 
 # hp: overrides of the impl's defaults only, identical across datasets.
 models:
-  strongsort:
-    impl: boxmot  # vendored, 259625c8
-    hp: {}  # StrongSortConfig defaults; they equal config/mapsort.yaml tracker.strongsort
-
   botsort:
     impl: boxmot  # vendored, 259625c8
     hp: {}  # BotSortConfig defaults; frame_rate is per-sequence, set by the runner from data
