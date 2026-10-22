@@ -34,6 +34,7 @@ I_t ─> Detector ─> D_t ─┬─> Tracker ─> T (running tracks)
 | [mapsort/viz.py](mapsort/viz.py) | Track overlays and the imshow window. |
 | [mapsort/runs.py](mapsort/runs.py) | Run directories: `runs/<stamp>_<module>/`. |
 | [mapsort/eval/](mapsort/eval/) | Scores run artifacts from disk; never imports the pipeline. |
+| [reloc3d/](reloc3d/) | Santos et al. (arXiv:2312.16724v1) orange tracker, reimplemented: frame-to-frame IoU Hungarian plus 3-D sphere relocalization from the COLMAP cameras. `python -m reloc3d` reruns the paper's MOrangeT sensitivity tables; model `reloc3d` in [config/eval.yaml](config/eval.yaml) runs it in `scripts/eval/eval.py`. |
 | [config/](config/) | `mapsort.yaml`: one file, three sections -- `run` (CLI flag defaults; flags override), `pipeline` (module kwargs), `protocol` (scoring). Plus `datasets.yaml`. |
 | [scripts/data/](scripts/data/) | Builds `mot/` and `dets/` from a dataset's native annotations. |
 | [scripts/landmarks/](scripts/landmarks/) | Builds `landmarks/` — `sfm_mapping.py` extracts them from a COLMAP model. |

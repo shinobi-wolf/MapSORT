@@ -38,3 +38,7 @@ models:
       landmarks:
         gate: 200  # universal across datasets
         reprojection: 1.0  # box sizes
+
+  reloc3d:
+    impl: reloc3d  # reloc3d/, Santos et al. arXiv:2312.16724v1; cameras from recon/<seq>/model_txt
+    hp: {}  # reloc3d.Params defaults; Algorithm 1's thresholds are not given in the paper
