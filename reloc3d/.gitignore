@@ -1,0 +1,5 @@
+# Machine-specific symlinks to MOrangeT V03 and V04; see README.md.
+data/
+# As for the project's runs/: manifest.json and metrics.json are tracked, the rest is not.
+runs/*/artifacts/
+runs/*/eval.log

@@ -50,7 +50,7 @@ DATASET_NAMES = {
     "grapemots": "GrapeMOTS",
     "applemots": "AppleMOTS",
 }
-MODEL_NAMES = {"botsort": "BoT-SORT", "sam2mot": "SAM2MOT", "mapsort": "MapSORT", "reloc3d": "Reloc3D"}
+MODEL_NAMES = {"botsort": "BoT-SORT", "sam2mot": "SAM2MOT", "mapsort": "MapSORT"}
 # dataset -> (sequence, ablation column prefix)
 REPRESENTATIVE = {
     "lettucemots": ("0011", "lettuce0011"),
@@ -282,21 +282,6 @@ def run_boxmot(seq: Sequence, spec: dict) -> list[Track]:
     return tracks
 
 
-def run_reloc3d(seq: Sequence, spec: dict) -> list[Track]:
-    """Santos et al.'s tracker (reloc3d/) on the stored detections and the cameras of recon/<seq>/model_txt."""
-    from reloc3d import Params, Reloc3D, load_cameras
-
-    dets = seq.stored_detections()
-    cameras = load_cameras(seq.recon_path / "model_txt", [p.name for p in seq.image_paths()])
-    boxes = [np.array([d.bbox for d in frame], dtype=float).reshape(-1, 4) for frame in dets]
-    out = [Track(frame_id=i, detections=[], track_ids=[]) for i in range(len(dets))]
-    for track_id, track in enumerate(Reloc3D(cameras, Params(**spec["hp"])).run(boxes), 1):
-        for f, j in zip(track.frames, track.indices):
-            out[f].detections.append(dets[f][j])
-            out[f].track_ids.append(track_id)
-    return out
-
-
 def run_sam2mot(seq: Sequence, spec: dict) -> list[Track]:
     """Sam2Mot from boxmot-v25.0.0; only valid inside the --worker subprocess."""
     import torch
@@ -347,7 +332,7 @@ def run(seq: Sequence, spec: dict, out: Path) -> dict:
             raise subprocess.CalledProcessError(proc.returncode, cmd)
         return runs.read_json(timing)
 
-    runner = {"mapsort": run_mapsort, "boxmot": run_boxmot, "reloc3d": run_reloc3d}[spec["impl"]]
+    runner = {"mapsort": run_mapsort, "boxmot": run_boxmot}[spec["impl"]]
     started = time.perf_counter()
     tracks = runner(seq, spec)
     result = {"seconds": time.perf_counter() - started, "frames": len(tracks)}

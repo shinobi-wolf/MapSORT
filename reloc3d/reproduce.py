@@ -4,7 +4,8 @@
     python -m reloc3d --rates 1 --no-reloc-rates     # perfect detection only
     python -m reloc3d --max-geom-error 20            # an Algorithm 1 setting the paper leaves open
 
-Reads data/moranget/raw/<seq>/{gt/gt.txt, geom/, images/}, writes runs/<stamp>_reloc3d/ and prints ours
+Reads <seq>/{gt/gt.txt, geom/, images/} from reloc3d/data/ (V03, V04) or data/moranget/raw/, writes
+reloc3d/runs/<stamp>_reloc3d/ and prints ours
 against the paper. Scores come from mapsort.eval (TrackEval), as for every other tracker in this repo.
 """
 
@@ -25,13 +26,16 @@ from mapsort.data import Sequence, data_root
 
 from . import Params, Reloc3D, load_cameras
 
-PAPER = Path(__file__).with_name("paper_tables.csv")
+HERE = Path(__file__).parent
+PAPER = HERE / "paper_tables.csv"
+EXTRA = HERE / "data"  # V03 and V04, which the rest of the project does not use
+RUNS = HERE / "runs"
 FIELDS = ("HOTA", "DetA", "AssA", "MOTA")
 FIXED = ("relocalization", "seed")  # set per configuration, not by flags
 
 
 def raw_sequence(raw: Path, name: str) -> Sequence:
-    path = raw / name
+    path = EXTRA / name if (EXTRA / name).exists() else raw / name
     return Sequence(dataset="moranget", split="test", name=name, path=path, dets_path=None,
                     landmark_dir=path, landmark_backends=(), recon_path=path / "geom")
 
@@ -103,7 +107,7 @@ def report(metrics: dict, keys: list[str], paper: dict[str, dict], names: list[s
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--raw", type=Path, default=data_root() / "moranget" / "raw")
-    ap.add_argument("--seqs", nargs="+", help="default: every V<nn> under --raw")
+    ap.add_argument("--seqs", nargs="+", help="default: every V<nn> under --raw and reloc3d/data")
     ap.add_argument("--rates", nargs="*", type=float, default=[1.0, 0.8, 0.6, 0.4])
     ap.add_argument("--no-reloc-rates", nargs="*", type=float, default=[1.0, 0.8])
     ap.add_argument("--seeds", nargs="+", type=int, default=[0, 1, 2, 3, 4], help="box drops; rate 1 uses the first")
@@ -121,13 +125,13 @@ def main() -> None:
 
     from mapsort.eval.tracking import evaluate
 
-    names = args.seqs or sorted(p.name for p in args.raw.glob("V[0-9][0-9]") if (p / "gt" / "gt.txt").exists())
+    names = args.seqs or sorted({p.name for d in (args.raw, EXTRA) for p in d.glob("V[0-9][0-9]") if (p / "gt" / "gt.txt").exists()})
     base = {f.name: getattr(args, f.name) for f in dataclasses.fields(Params) if f.name not in FIXED}
     seeds = lambda rate: args.seeds if rate < 1 else args.seeds[:1]  # noqa: E731
     configs = [(True, r, s) for r in args.rates for s in seeds(r)]
     configs += [(False, r, s) for r in args.no_reloc_rates for s in seeds(r)]
     key = lambda reloc, rate, seed: f"{'reloc' if reloc else 'noreloc'}_r{rate:g}_s{seed}"  # noqa: E731
-    run_dir = runs.create("reloc3d" + (f"_{args.tag}" if args.tag else ""), config={
+    run_dir = runs.create("reloc3d" + (f"_{args.tag}" if args.tag else ""), runs_dir=RUNS, config={
         "params": base, "sequences": names, "raw": str(args.raw), "configs": [key(*c) for c in configs],
     })
 
