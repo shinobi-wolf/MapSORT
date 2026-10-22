@@ -1,0 +1,62 @@
+{
+  "config": {
+    "configs": [
+      "reloc_r1_s0",
+      "reloc_r0.8_s0",
+      "reloc_r0.8_s1",
+      "reloc_r0.8_s2",
+      "reloc_r0.8_s3",
+      "reloc_r0.8_s4",
+      "reloc_r0.6_s0",
+      "reloc_r0.6_s1",
+      "reloc_r0.6_s2",
+      "reloc_r0.6_s3",
+      "reloc_r0.6_s4",
+      "reloc_r0.4_s0",
+      "reloc_r0.4_s1",
+      "reloc_r0.4_s2",
+      "reloc_r0.4_s3",
+      "reloc_r0.4_s4",
+      "noreloc_r1_s0",
+      "noreloc_r0.8_s0",
+      "noreloc_r0.8_s1",
+      "noreloc_r0.8_s2",
+      "noreloc_r0.8_s3",
+      "noreloc_r0.8_s4"
+    ],
+    "params": {
+      "c_ray": 0.9,
+      "count_unmodelled": false,
+      "inliers_ratio": 0.5,
+      "keep_failed": false,
+      "max_geom_error": 10.0,
+      "max_iters": 1000,
+      "min_boxes": 5,
+      "order": "random"
+    },
+    "raw": "/home/shinobi-wolf/ISU/sem3/ME_5770/assignments/MapSORT/data/moranget/raw",
+    "sequences": [
+      "V01",
+      "V02",
+      "V03",
+      "V04",
+      "V05",
+      "V06",
+      "V07",
+      "V08",
+      "V09",
+      "V10",
+      "V11",
+      "V12"
+    ]
+  },
+  "created": "2026-10-22T02:52:22.319099+00:00",
+  "git": {
+    "branch": "pivot/camera-resection",
+    "commit": "109f2c9fedae3a3b95e7abede6689b9e503bf679",
+    "dirty": false
+  },
+  "module": "reloc3d_all12",
+  "run_id": "20261022-025222_reloc3d_all12",
+  "task_id": null
+}

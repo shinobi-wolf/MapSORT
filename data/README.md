@@ -203,6 +203,9 @@ Source: <https://github.com/AgtechFundecitrus/MOrangeT>. Orange trees scanned by
 hand-held phone during the 2022 Fundecitrus harvest survey, portrait, about
 1080x1930 (each sequence differs slightly). V01, V02 and V05-V12 are used
 (V01: 408 frames, 110 oranges).
+V03 and V04 are linked in `raw/` only for `python -m reloc3d` (the paper's 12-sequence
+reproduction); they have no MOT view and are not in datasets.yaml. Their zips need a
+resumable download (`curl -C -`); the server drops long transfers.
 
 This is the closest thing we have to a purpose-built MapSORT benchmark: every
 sequence ships a COLMAP reconstruction *and* `oranges-3d.txt`, a per-fruit 3D
