@@ -1,5 +1,5 @@
-sequence,hardware,BoT-SORT,SAM2MOT,MapSORT
-LettuceMOTS 0011,W,5.30,2.81,1.52
-MOrangeT V01,W,3.66,0.14,1.35
-GrapeMOTS PathPlanning_7,W,1.48,0.02,0.83
-AppleMOTS 0008,W,2.47,0.16,1.08
+sequence,hardware,BoT-SORT,SAM2MOT,MapSORT,StrongSORT,Deep OC-SORT
+LettuceMOTS 0011,W,5.30,2.81,1.52,3.18,5.20
+MOrangeT V01,W,3.66,0.14,1.35,2.08,3.64
+GrapeMOTS PathPlanning_7,W,1.48,0.02,0.83,1.13,1.40
+AppleMOTS 0008,W,2.47,0.16,1.08,1.86,2.38

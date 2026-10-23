@@ -50,7 +50,13 @@ DATASET_NAMES = {
     "grapemots": "GrapeMOTS",
     "applemots": "AppleMOTS",
 }
-MODEL_NAMES = {"botsort": "BoT-SORT", "sam2mot": "SAM2MOT", "mapsort": "MapSORT"}
+MODEL_NAMES = {
+    "botsort": "BoT-SORT",
+    "strongsort": "StrongSORT",
+    "deepocsort": "Deep OC-SORT",
+    "sam2mot": "SAM2MOT",
+    "mapsort": "MapSORT",
+}
 # dataset -> (sequence, ablation column prefix)
 REPRESENTATIVE = {
     "lettucemots": ("0011", "lettuce0011"),
@@ -259,14 +265,17 @@ def run_mapsort(seq: Sequence, spec: dict) -> list[Track]:
 
 
 def run_boxmot(seq: Sequence, spec: dict) -> list[Track]:
-    """Vendored-boxmot BoT-SORT at its config defaults plus `hp`."""
+    """A vendored-boxmot tracker at its config defaults plus `hp`."""
     from boxmot import ReIDConfig, create_tracker
-    from boxmot.trackers.botsort.config import BotSortConfig
+    from boxmot.trackers.common.config import get_tracker_config_class
 
-    params = {**spec["hp"], "frame_rate": int(seq.info["frameRate"])}
+    config_cls = get_tracker_config_class(spec["tracker"])
+    params = dict(spec["hp"])
+    if "frame_rate" in config_cls.fields():
+        params["frame_rate"] = int(seq.info["frameRate"])
     reid = encoder_for(seq, spec["live"])
     tracker = create_tracker(
-        spec["tracker"], config=BotSortConfig(**params), reid=ReIDConfig(**reid) if isinstance(reid, dict) else reid
+        spec["tracker"], config=config_cls(**params), reid=ReIDConfig(**reid) if isinstance(reid, dict) else reid
     )
 
     dets = seq.stored_detections()
@@ -552,7 +561,7 @@ def main() -> None:
         args.tables = [t for t in args.tables if t not in ("ablation", "gate")]
 
     if "main" in args.tables:
-        rows = []
+        rows, perseq = [], []
         for ds, seqs in test.items():
             if not complete[ds]:
                 continue
@@ -562,7 +571,12 @@ def main() -> None:
                     continue
                 row = metric_row(r["tracking"]["combined"], r["revisit"]["combined"], iou)
                 rows.append({"dataset": DATASET_NAMES[ds], "tracker": MODEL_NAMES[name], **row})
+                for seq in seqs:
+                    row = metric_row(r["tracking"]["per_sequence"][seq.name], r["revisit"]["per_sequence"][seq.name], iou)
+                    perseq.append({"dataset": DATASET_NAMES[ds], "sequence": seq.name, "tracker": MODEL_NAMES[name],
+                                   **{k: row[k] for k in ("HOTA", "IDF1", "IDSW", "RIP")}})
         merge_csv("tab_main.csv", ["dataset", "tracker"], rows)
+        merge_csv("tab_perseq.csv", ["dataset", "sequence", "tracker"], perseq)
 
     if "sequences" in args.tables:
         rows = []
