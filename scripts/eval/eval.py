@@ -529,6 +529,7 @@ def main() -> None:
     ap.add_argument("--models", nargs="+", help="subset of eval.yaml models (default: all)")
     ap.add_argument("--datasets", nargs="+", help="subset of datasets.yaml datasets (default: all)")
     ap.add_argument("--no-run", action="store_true", help="score finished outputs only; skip the rest")
+    ap.add_argument("--no-paper", action="store_true", help="write the result CSVs to <run>/results, not the paper's")
     args = ap.parse_args()
 
     cfg = yaml.safe_load(args.config.read_text())
@@ -539,6 +540,10 @@ def main() -> None:
     iou = metrics["tracking"]["iou_threshold"]
 
     run_dir = args.run or create_run_dir({"eval": cfg, "tables": args.tables})
+    if args.no_paper:
+        global RESULTS
+        RESULTS = run_dir / "results"
+        RESULTS.mkdir(exist_ok=True)
     log = (run_dir / "eval.log").open("a")
     sys.stdout, sys.stderr = Tee(sys.stdout, log), Tee(sys.stderr, log)
     print(f"{stamp()}  {socket.gethostname()}  {' '.join(sys.argv)}  -> {run_dir}", flush=True)

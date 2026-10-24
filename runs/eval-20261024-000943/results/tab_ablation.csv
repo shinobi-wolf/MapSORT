@@ -1,0 +1,6 @@
+variant,orange_V01_HOTA,orange_V01_IDF1,grape_PP7_HOTA,grape_PP7_IDF1,apple0008_HOTA,apple0008_IDF1,lettuce0011_HOTA,lettuce0011_IDF1,RIP
+(a) BoT-SORT,74.39,64.03,89.60,85.48,98.79,99.37,77.88,64.91,6.9
+(b) + landmark revival,92.18,89.57,93.42,92.39,98.81,99.38,97.00,98.46,67.3
+(c) + camera revival,96.14,95.78,97.41,97.51,98.81,99.38,91.42,90.71,85.1
+(d) + map motion (MapSORT),97.07,97.08,96.73,96.35,98.81,99.38,93.34,93.67,89.0
+"(e) (d), point landmark",97.10,97.09,97.19,97.36,98.81,99.38,94.05,95.21,86.9
