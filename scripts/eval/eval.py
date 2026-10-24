@@ -37,7 +37,7 @@ REPO = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO))
 
 from mapsort import runs  # noqa: E402
-from mapsort.data import DEFAULT_REGISTRY, Sequence, data_root, registry, sequence  # noqa: E402
+from mapsort.data import DEFAULT_REGISTRY, Sequence, data_root, registry, reid_weights, sequence  # noqa: E402
 from mapsort.eval.mot_io import write_tracks  # noqa: E402
 from mapsort.schemas import Track  # noqa: E402
 
@@ -236,7 +236,7 @@ def frames(seq: Sequence):
 def encoder_for(seq: Sequence, live: bool):
     model = reid_model(seq)
     if live:
-        return {"model": model}
+        return {"model": reid_weights(model)}
     return CachedEncoder(frame_boxes(seq), cached_embeddings(seq, model))
 
 

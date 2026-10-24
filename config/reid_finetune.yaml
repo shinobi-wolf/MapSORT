@@ -1,0 +1,42 @@
+# Per-dataset ReID fine-tuning (scripts/reid/finetune.py): OSNet-x0.25 from MSMT17 on GT crops of
+# sequences outside every test split. The caps are hard and the same for every dataset, so cost is
+# bounded by them rather than by how much data a dataset happens to have.
+
+base: models/osnet_x0_25_msmt17.pt
+seed: 0
+
+caps:
+  ids: 200  # train identities, shared evenly across the train sequences
+  crops_per_id: 10  # evenly spaced along the track; neighbouring frames are near-duplicates
+  val_ids: 30
+  epochs: 10
+
+filters:
+  min_side: 12  # px, shorter box side
+  edge: 2  # px; boxes this close to the frame edge are cut by it
+  max_ioa: 0.5  # drop a box more than this fraction covered by another GT box
+  min_crops: 4  # a track needs this many usable crops (>= batch K) to be sampled
+
+train:
+  p: 16  # identities per batch
+  k: 4  # crops per identity
+  lr: 3.0e-4
+  weight_decay: 5.0e-4
+  margin: 0.3  # batch-hard triplet
+  label_smoothing: 0.1
+  pad: 10  # px, random-crop augmentation on the 256x128 crop
+
+# Train and val are sequences of each dataset's `train` split in datasets.yaml.
+datasets:
+  applemots:
+    train: ["0000", "0001", "0002", "0003", "0004"]
+    val: "0005"
+  grapemots:
+    train: ["PathPlanning_4", "PathPlanning_5", "PathPlanning_6"]
+    val: "PathPlanning_8"
+  lettucemots:
+    train: ["0000", "0004", "0008"]
+    val: "0009"
+  moranget:
+    train: ["V03"]
+    val: "V04"

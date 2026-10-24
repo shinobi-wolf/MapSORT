@@ -40,6 +40,15 @@ dets file's `dets_sha256` and the `reid` config they were built with.
 embedding call, so they stand in for live ReID exactly; reject the file if the
 hash no longer matches `dets/`. Timing runs must not use it.
 
+`osnet-x0-25-<dataset>` is OSNet-x0.25 fine-tuned from MSMT17 on GT crops of
+that dataset's `train` split by `scripts/reid/finetune.py`, under the hard caps
+and splits in [config/reid_finetune.yaml](../config/reid_finetune.yaml): at most
+200 identities x 10 crops for training and 30 identities from one held-out
+train sequence to pick the epoch. Its weights are `models/reid/<model>.pt`
+(git-ignored; the `runs/reid-*` manifest records their sha256 and every crop),
+and `reid_cache.py --model` and live eval load them from there. Each test
+sequence lists its dataset's fine-tuned model first under `reid`, so eval uses it.
+
 ### Landmark format
 
 A landmark observation is a **Gaussian over the object's position in the map
@@ -140,6 +149,8 @@ mkdir -p data/moranget/raw
 for v in $SEQS; do ln -s /path/to/MOrangeT/$v/$v data/moranget/raw/$v; done
 
 python scripts/data/moranget_to_mot.py --seqs $SEQS   # writes mot/test/<seq>/
+# V03 and V04 (raw/ links made the same way) are ReID fine-tuning data only.
+python scripts/data/moranget_to_mot.py --split train --seqs V03 V04
 for v in $SEQS; do
   mkdir -p data/moranget/recon/$v/model_txt
   ln -s ../../raw/$v/geom data/moranget/recon/$v/sparse
@@ -158,12 +169,15 @@ python scripts/reid/reid_cache.py --dataset moranget --seqs $SEQS
 
 Source: <https://github.com/NanH5837/LettuceMOTS> (dataset on Google Drive).
 
-Only the test split's frames and the instance files are downloaded from the
-Drive folder (`train/` is skipped):
+Only the test split's frames, the instance files and the frames of the four
+train sequences used for ReID fine-tuning are downloaded from the Drive folder.
+gdown refuses folders over 50 files, so `fetch_train.py`, beside the download,
+lists folders through Drive's embedded view and fetches each file by id:
 
 | Path under `raw/` | What |
 |---|---|
 | `test/images/<seq>/` | Frames, `%06d.png`, **0-based**, 810x1080. |
+| `train/images/<seq>/` | The same, for 0000, 0004, 0008 and 0009 only. |
 | `test/instances/<seq>/` | Per-frame instance masks, uint16, value `class * 1000 + n`. |
 | `instances/<split>/<seq>.txt` | MOTS masks (RLE), all 12 sequences — the actual ground truth. |
 | `LettuceMOTSyolo/<seq>/` | YOLO-seg labels, upstream train sequences only. |
@@ -176,7 +190,8 @@ every instance's label and box match its `gt.txt` row (9718/9718).
 
 - **Splits.** `mot/test/` holds the upstream held-out sequences — 0003, 0007,
   0011, the long ones at 223–245 frames. That is the eval set. The nine train
-  sequences (45–117 frames) have GT but no frames on disk.
+  sequences (45–117 frames) all have GT; only 0000, 0004, 0008 and 0009 have
+  frames on disk, and they are `mot/train/`, used only for ReID fine-tuning.
 - **GT format** (generated): `frame, track_id, x, y, w, h, conf, class,
   visibility`, 1-based frames, top-left `xywh`. `Detection.bbox` is `xyxy`, so
   convert.
@@ -217,8 +232,9 @@ one sequence, and there is real 3D ground truth to score landmarks against.
 | `geom/*.bin` | COLMAP model, all frames registered. |
 | `oranges-3d.txt` | `x, y, z, radius` per fruit, in the COLMAP frame. |
 
-- **Splits.** Upstream's seqmap calls all 12 `test`; we keep that, so there is
-  no development split to tune thresholds on. `--min-track 5` was tuned on V01
+- **Splits.** Upstream's seqmap calls all 12 `test`. We evaluate on the ten
+  above and keep V03 and V04 as `mot/train/`, used only for ReID fine-tuning,
+  so there is no development split to tune thresholds on. `--min-track 5` was tuned on V01
   and applies to every sequence.
 - **`seqinfo.ini` is wrong upstream** — V01's claims 1080x1940, but the JPEGs and
   the GT boxes (max corner 1082x1943) are 1083x1944, as is the COLMAP camera.
@@ -279,6 +295,8 @@ mkdir -p data/grapemots data/applemots
 ln -s /path/to/grapemots data/grapemots/raw     # PathPlanning_<n>.zip unzipped to PathPlanning_<n>/
 ln -s /path/to/applemots data/applemots/raw     # contains APPLE_MOTS/{train,testing}
 python scripts/data/grapemots_to_mot.py         # writes mot/test/<seq>/
+python scripts/data/grapemots_to_mot.py --split train \
+  --seqs PathPlanning_4 PathPlanning_5 PathPlanning_6 PathPlanning_8   # ReID fine-tuning only
 python scripts/data/applemots_to_mot.py         # writes mot/{train,test}/<seq>/
 ```
 
