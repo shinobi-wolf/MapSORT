@@ -1,7 +1,7 @@
 component,parameter,value
-Detection,Detector,"YOLO (version TBD), fine-tuned per dataset"
-Detection,Input size,
-Detection,Confidence threshold,
+Detection,Detector,"YOLOv8m (-seg on MOTS datasets), fine-tuned per dataset"
+Detection,Input size,1280 px
+Detection,Confidence threshold,0.1
 Scene map,SfM,"COLMAP 3.9.1, shared RADIAL camera; MOrangeT: models shipped with the dataset"
 Scene map,Features,"SIFT, <=16384 per frame, max side 3840 px"
 Scene map,Matching,"Exhaustive; sequential, 30 neighbours, on GrapeMOTS PathPlanning_1 and _3"
@@ -9,7 +9,6 @@ Landmark filters,LettuceMOTS,Mask
 Landmark filters,MOrangeT,Track length >= 5
 Landmark filters,GrapeMOTS,"Mask eroded by 0 to 16 px; depth k = 1.5 to 3; track length 3 to 5 on two sequences"
 Landmark filters,AppleMOTS,"Mask eroded by 0 or 1 px; depth k = 3 on 0007"
-Landmark filters,MangoYield,
 BoT-SORT,Re-ID model,"OSNet-x0.25, fine-tuned per dataset"
 BoT-SORT,"Appearance, proximity thresholds","0.62, 0.61"
 BoT-SORT,First-stage match threshold,0.77

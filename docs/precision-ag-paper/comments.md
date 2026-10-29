@@ -27,6 +27,7 @@ Comments are appended per draft iteration. Each item notes how it was handled in
   *Draft 2: "offline" now appears only in the Conclusion.*
 - 3.8: along with the four public third-party datasets, include our own dataset collected at IISc. A camera (RealSense D435i) mounted on a DJI Matrice 600 hexacopter was flown around three trees in a mango orchard in Bengaluru. It is not an MOT dataset: there is only a GT yield count per tree, so it is used only to evaluate the yield count.
   *Draft 2: added as "MangoYield", with a dedicated yield-count table (Sect. 4.4). The name is a placeholder. The text assumes one flight per tree; confirm this, along with the frame counts, resolution and how the GT counts were obtained.*
+  *Draft 5: MangoYield dropped from the paper's scope; its dataset entries, yield-count section and table removed.*
 - 3.9: YOLO will be trained soon, so don't say the detections are derived from GT. Rewrite 3.9 as if the YOLO detectors were already in use.
   *Draft 2: done. YOLO version, input size, confidence threshold, training data per dataset and AP50 are TBD.*
 - 3.10: the ReID model will also be trained per dataset. Write it up as if that were already done.

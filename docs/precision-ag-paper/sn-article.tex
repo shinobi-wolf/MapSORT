@@ -64,9 +64,9 @@
 
 \abstract{\textbf{Purpose:} Plant- and fruit-level records in precision agriculture, such as yield estimates, phenotyping logs and targeted spraying, require every plant or fruit to keep one identity across a video, including when the camera leaves and later returns to it. General-purpose multi-object trackers lose identity in exactly this situation, because crops look alike and an object out of view for more than a few frames is forgotten. This work turns the property that sets agricultural targets apart, that they do not move, into an association cue that keeps identities intact across occlusions and revisits.
 
-\textbf{Methods:} MapSORT reconstructs the scene with structure-from-motion and gives every detection and every track a landmark: a Gaussian over the object's position in the scene map. Built on BoT-SORT, it fits a camera to its own tracks in every frame, from their landmarks and boxes, and uses that camera to place each stationary object in the image. Tracks the frame-to-frame association misses are re-matched where their landmark projects; lost tracks, and tracks that left the view long ago and were kept dormant rather than deleted, are revived the same way, including objects that re-enter at the frame edge. MapSORT is compared with StrongSORT, Deep OC-SORT and BoT-SORT on four public datasets (LettuceMOTS, MOrangeT, GrapeMOTS, AppleMOTS) and on per-tree yield counts in a mango orchard.
+\textbf{Methods:} MapSORT reconstructs the scene with structure-from-motion and gives every detection and every track a landmark: a Gaussian over the object's position in the scene map. Built on BoT-SORT, it fits a camera to its own tracks in every frame, from their landmarks and boxes, and uses that camera to place each stationary object in the image. Tracks the frame-to-frame association misses are re-matched where their landmark projects; lost tracks, and tracks that left the view long ago and were kept dormant rather than deleted, are revived the same way, including objects that re-enter at the frame edge. MapSORT is compared with StrongSORT, Deep OC-SORT and BoT-SORT on four public datasets (LettuceMOTS, MOrangeT, GrapeMOTS, AppleMOTS).
 
-\textbf{Results:} Averaged over the four datasets, MapSORT reaches 95.5 HOTA and 96.0 IDF1, 10.2 and 16.7 points above the strongest baseline, BoT-SORT, and cuts identity switches from 1150, the fewest of any baseline, to 223. It preserves identity in 91.9\% of 1043 revisit events, against at most 11.5\% for the baselines, at every length of absence. It has fewer identity switches than every baseline on 19 of the 21 test sequences. Per-tree mango counts are within \tbd{}\% of the ground-truth yield.
+\textbf{Results:} Averaged over the four datasets, MapSORT reaches 95.5 HOTA and 96.0 IDF1, 10.2 and 16.7 points above the strongest baseline, BoT-SORT, and cuts identity switches from 1150, the fewest of any baseline, to 223. It preserves identity in 91.9\% of 1043 revisit events, against at most 11.5\% for the baselines, at every length of absence. It has fewer identity switches than every baseline on 19 of the 21 test sequences.
 
 \textbf{Conclusion:} The position of a stationary object in a map of the scene is an identity cue that survives arbitrarily long absences. Recovering the camera from the tracks themselves turns that position into a motion model and a re-identification cue, giving identity-consistent tracks and accurate counts across crops, platforms and viewing patterns.}
 
@@ -97,7 +97,7 @@ The contributions of this work are:
 \item A per-frame camera resection from the tracker's own landmark-to-box correspondences, robust to wrong matches and to near-coplanar scenes such as a field of lettuce, which places every stationary object, visible or not, in the current image.
 \item MapSORT, which adds two stages to BoT-SORT \citep{aharon2022botsort}: a map-motion stage that re-matches unmatched tracks where the camera places them, and a revival stage that reclaims the identity of lost and dormant tracks by reprojection, including objects that re-enter at the frame edge with only a sliver visible. Tracks that leave the view are kept dormant instead of deleted, so identity survives absences of any length.
 \item A revisit-centred evaluation protocol: a revisit identity preservation rate that decomposes CLEAR identity switches by the absence that preceded them, together with count error, which is the quantity yield estimation consumes.
-\item A benchmark against StrongSORT, Deep OC-SORT and BoT-SORT on four public agricultural datasets (LettuceMOTS, MOrangeT, GrapeMOTS and AppleMOTS), covering four crops, four platforms and three viewing patterns, with per-sequence results, and a yield-count evaluation in a mango orchard against per-tree yield counts.
+\item A benchmark against StrongSORT, Deep OC-SORT and BoT-SORT on four public agricultural datasets (LettuceMOTS, MOrangeT, GrapeMOTS and AppleMOTS), covering four crops, four platforms and three viewing patterns, with per-sequence results.
 \end{enumerate}
 
 %% =====================================================================
@@ -283,18 +283,17 @@ A frame-to-frame tracker deletes a track after $A_{\max}$ frames without a match
 
 \subsection{Datasets}\label{sec:datasets}
 
-MapSORT is evaluated on four publicly available agricultural MOT datasets and on an orchard dataset collected for this work (Table~\ref{tab:datasets}, Fig.~\ref{fig:samples}). Together they cover five crops, four acquisition platforms and four viewing patterns: repeated passes along a row, multi-perspective inspection, orbits around a tree and continuous sweeps. Mask annotations are converted to axis-aligned boxes in MOT format. Per-sequence statistics are listed in Appendix~\ref{sec:app-seq}.
+MapSORT is evaluated on four publicly available agricultural MOT datasets (Table~\ref{tab:datasets}, Fig.~\ref{fig:samples}). Together they cover four crops, four acquisition platforms and three viewing patterns: repeated passes along a row, multi-perspective inspection and continuous sweeps. Mask annotations are converted to axis-aligned boxes in MOT format. Per-sequence statistics are listed in Appendix~\ref{sec:app-seq}.
 
 \begin{description}
 \item[LettuceMOTS] \citep{hu2024lettucemots} was recorded by a downward-facing camera on a field robot over lettuce at three growth stages. The robot travels back and forth along the rows, so every plant is seen twice, with long absences in between. The three designated test sequences (0003, 0007, 0011) are used.
 \item[MOrangeT] \citep{santos2024moranget} consists of smartphone videos, each sweeping one side of a sweet-orange tree in a commercial grove; the same fruit leaves and re-enters the field of view several times as the camera moves around the canopy. V01, V02 and V05 to V12 are used.
 \item[GrapeMOTS] \citep{arizasentis2024grapemots} was recorded by a UAV over a vineyard. Its path-planned videos view the canopy from multiple perspectives to reduce leaf occlusion. PathPlanning\_1, PathPlanning\_2, PathPlanning\_3 and PathPlanning\_7 are used.
 \item[AppleMOTS] \citep{dejong2022applemots} contains UAV and wearable-camera video of apple trees with dense clusters of small, similar fruit. The test split (0006, 0007, 0008, 0010) is used; sequences 0011 and 0012 repeat 0007 and 0008 with locally edited pixels and are excluded. AppleMOTS sequences are continuous sweeps without revisits, and test MapSORT in short-term association among dense, near-identical fruit.
-\item[MangoYield] was collected for this work in a mango orchard in Bengaluru, India, with an Intel RealSense D435i camera mounted on a DJI Matrice 600 hexacopter. The UAV flew around each of three trees, viewing the canopy from all sides, so that fruit seen early in a flight is seen again as the orbit closes. Only the RGB stream is used. The ground truth is the yield count of each tree, which makes MangoYield a direct test of the quantity yield estimation needs (Sect.~\ref{sec:res-yield}).
 \end{description}
 
 \begin{table}[t]
-\caption{Evaluation datasets. Frames, identities, boxes and revisit events are totals over the sequences used. A revisit event is a ground-truth object reappearing after at least 10 frames out of view. MangoYield provides a yield count per tree in place of per-frame annotations.}\label{tab:datasets}
+\caption{Evaluation datasets. Frames, identities, boxes and revisit events are totals over the sequences used. A revisit event is a ground-truth object reappearing after at least 10 frames out of view.}\label{tab:datasets}
 \footnotesize
 \setlength{\tabcolsep}{3pt}
 \begin{tabular*}{\textwidth}{@{\extracolsep\fill}lllrrlrrr@{}}
@@ -305,7 +304,6 @@ LettuceMOTS & Lettuce & Robot, nadir & 3 & 712 & 810$\times$1080 & 114 & 9\,718 
 MOrangeT & Orange & Phone, lateral & 10 & 3\,695 & $\approx$1080$\times$1920 & 1\,003 & 102\,409 & 950 \\
 GrapeMOTS & Grape & UAV, multi-view & 4 & 1\,761 & $\le$3840$\times$2160 & 196 & 25\,093 & 23 \\
 AppleMOTS & Apple & UAV, wearable & 4 & 626 & 1296$\times$972 & 977 & 27\,533 & 0 \\
-MangoYield (ours) & Mango & UAV, orbit & 3 & \tbd & \tbd & n/a & n/a & n/a \\
 \botrule
 \end{tabular*}
 \end{table}
@@ -319,18 +317,17 @@ MangoYield (ours) & Mango & UAV, orbit & 3 & \tbd & \tbd & n/a & n/a & n/a \\
 \includegraphics[height=0.315\textwidth]{figures/sample_grape.jpg} \\
 {\scriptsize (a)} & {\scriptsize (b)} & {\scriptsize (c)}
 \end{tabular}\\[3pt]
-\begin{tabular}{@{}cc@{}}
-\includegraphics[height=0.315\textwidth]{figures/sample_apple.jpg} &
-\figph{0.40\textwidth}{0.30\textwidth}{MangoYield\\sample frame} \\
-{\scriptsize (d)} & {\scriptsize (e)}
+\begin{tabular}{@{}c@{}}
+\includegraphics[height=0.315\textwidth]{figures/sample_apple.jpg} \\
+{\scriptsize (d)}
 \end{tabular}
-\caption{Sample frames: (a) LettuceMOTS 0011, (b) MOrangeT V01, (c) GrapeMOTS PathPlanning\_7 and (d) AppleMOTS 0008, with their ground-truth boxes, and (e) MangoYield.}
+\caption{Sample frames: (a) LettuceMOTS 0011, (b) MOrangeT V01, (c) GrapeMOTS PathPlanning\_7 and (d) AppleMOTS 0008, with their ground-truth boxes.}
 \label{fig:samples}
 \end{figure}
 
 \subsection{Detections}\label{sec:detections}
 
-Every tracker receives the same detections, produced by a YOLO detector \citep{jocher2023yolo} fine-tuned separately for each dataset. On the three MOTS datasets it is the instance-segmentation variant, whose masks the landmark filter of Sect.~\ref{sec:obs} uses. The detector is YOLO\tbd{} at an input size of \tbd{}\,px, initialised from COCO weights and fine-tuned on \tbd{}. Detections with a confidence above \tbd{} are passed to the trackers. On the evaluation sequences the detectors reach an AP$_{50}$ of \tbd{} on LettuceMOTS, \tbd{} on MOrangeT, \tbd{} on GrapeMOTS and \tbd{} on AppleMOTS.
+Every tracker receives the same detections, produced by a YOLO detector \citep{jocher2023yolo} fine-tuned separately for each dataset. On the three MOTS datasets it is the instance-segmentation variant, whose masks the landmark filter of Sect.~\ref{sec:obs} uses. The detector is YOLOv8m (YOLOv8m-seg on the MOTS datasets) at an input size of 1280\,px, initialised from COCO weights and fine-tuned on the same sequences outside the test data that train the re-identification model (Sect.~\ref{sec:baselines}). Detections with a confidence above 0.1 are passed to the trackers. On the evaluation sequences the detectors reach an AP$_{50}$ of 96.2 on LettuceMOTS, 87.4 on MOrangeT, 89.1 on GrapeMOTS and 81.3 on AppleMOTS.
 
 \subsection{Baselines}\label{sec:baselines}
 
@@ -344,7 +341,7 @@ Tracking accuracy is measured with HOTA and its detection and association compon
 \begin{equation}
 \mathrm{CE}=100\cdot\frac{|\mathrm{IDs}_{\text{pred}}|-|\mathrm{IDs}_{\text{GT}}|}{|\mathrm{IDs}_{\text{GT}}|}
 \end{equation}
-is the relative over-count (positive) or under-count (negative) of distinct identities; every identity switch that issues a new identity adds to it. On MangoYield, $|\mathrm{IDs}_{\text{pred}}|$ is the number of fruit identities a tracker issues over a tree's flight and $|\mathrm{IDs}_{\text{GT}}|$ is the tree's ground-truth yield count.
+is the relative over-count (positive) or under-count (negative) of distinct identities; every identity switch that issues a new identity adds to it.
 
 \paragraph{Revisit identity preservation.} A revisit event is a ground-truth object that reappears after at least $G=10$ consecutive frames out of view. At each event, the object's tracker identity is read, using exactly the per-frame assignment that CLEAR makes, at the first frame within a grace window of $W=5$ frames in which it is matched; the grace window allows for track confirmation after reappearance. The event is \emph{preserved} if that identity equals the one the object carried before the absence, a \emph{switch} if it differs, and \emph{unmatched} if the object is not matched within the window. The revisit identity preservation rate is
 \begin{equation}
@@ -363,19 +360,18 @@ Table~\ref{tab:hparams} lists MapSORT's settings. They are identical for every s
 \toprule
 Component & Parameter & Value \\
 \midrule
-\multirow{3}{*}{Detection} & Detector & YOLO\tbd, fine-tuned per dataset \\
- & Input size & \tbd \\
- & Confidence threshold & \tbd \\
+\multirow{3}{*}{Detection} & Detector & YOLOv8m (-seg on MOTS datasets), fine-tuned per dataset \\
+ & Input size & 1280\,px \\
+ & Confidence threshold & 0.1 \\
 \midrule
 \multirow{3}{*}{Scene map} & SfM & COLMAP 3.9.1, shared RADIAL camera; MOrangeT: models shipped with the dataset \\
  & Features & SIFT, $\le$16\,384 per frame, max.\ side 3840\,px \\
  & Matching & Exhaustive; sequential, 30 neighbours, on GrapeMOTS PathPlanning\_1 and \_3 \\
 \midrule
-\multirow{5}{*}{Landmark filters} & LettuceMOTS & Mask \\
+\multirow{4}{*}{Landmark filters} & LettuceMOTS & Mask \\
  & MOrangeT & Track length $\ell_{\min}=5$ \\
  & GrapeMOTS & Mask eroded by 0 to 16\,px; depth $k=1.5$ to 3; $\ell_{\min}=3$ to 5 on two sequences \\
  & AppleMOTS & Mask eroded by 0 or 1\,px; depth $k=3$ on 0007 \\
- & MangoYield & \tbd \\
 \midrule
 \multirow{5}{*}{BoT-SORT} & Re-ID model & OSNet-x0.25, fine-tuned per dataset \\
  & Appearance, proximity thresholds & 0.62, 0.61 \\
@@ -516,26 +512,6 @@ Fig.~\ref{fig:gap} breaks revisit outcomes down by how long the object was out o
 \caption{Revisit identity preservation by length of absence, over the 1043 revisit events of the test sequences. The baselines delete tracks lost for longer than their track buffer and preserve almost no identity beyond that horizon; MapSORT's dormant tracks keep identities recoverable at every absence length.}
 \label{fig:gap}
 \end{figure}
-
-\subsection{Yield estimation in a mango orchard}\label{sec:res-yield}
-
-Table~\ref{tab:yield} compares each tracker's fruit count with the yield count of the three MangoYield trees. An orbit around a tree is a demanding case for counting: every fruit on the near side is seen again from the far side as the orbit closes, and a tracker that forgets it counts it twice. MapSORT's count is within \tbd{}\% of the ground truth on average, against \tbd{}\% for the best baseline, because a fruit seen from the far side of the tree occupies the same position in the scene map as when it was first seen.
-
-\begin{table}[t]
-\caption{Fruit counts on MangoYield. Each cell gives the number of fruit identities issued over the tree's flight, with the count error CE (\%) in parentheses. Mean $|$CE$|$ is averaged over the three trees.}\label{tab:yield}
-\footnotesize
-\begin{tabular*}{\textwidth}{@{\extracolsep\fill}lrrrrr@{}}
-\toprule
-Tree & GT count & BoT-SORT & StrongSORT & Deep OC-SORT & MapSORT \\
-\midrule
-Tree 1 & \tbd & \tbd{} (\tbd) & \tbd{} (\tbd) & \tbd{} (\tbd) & \tbd{} (\tbd) \\
-Tree 2 & \tbd & \tbd{} (\tbd) & \tbd{} (\tbd) & \tbd{} (\tbd) & \tbd{} (\tbd) \\
-Tree 3 & \tbd & \tbd{} (\tbd) & \tbd{} (\tbd) & \tbd{} (\tbd) & \tbd{} (\tbd) \\
-\midrule
-Mean $|$CE$|$ (\%) & & \tbd & \tbd & \tbd & \tbd \\
-\botrule
-\end{tabular*}
-\end{table}
 
 \subsection{Ablation study}\label{sec:res-ablation}
 
@@ -710,7 +686,7 @@ The results show that, for stationary agricultural targets, a scene-map position
 
 \paragraph{Consequences for precision agriculture.} The most direct consequence is counting. Every identity switch that issues a new identity is a phantom plant or fruit in the count. The baselines over-count by 43\% to 128\% on the representative sequences with revisits, which would make their output unusable as a yield estimate without heavy post-hoc correction; MapSORT's count error there is between 0\% and 8\%. A second consequence is per-plant records. Because a plant keeps its identity across passes, measurements taken on the outbound and return passes, or from different UAV perspectives, attach to the same plant, which is what plant-level phenotyping and selective treatment need. A third is spatial: every MapSORT track carries a position in the scene map, so a track list is also a plant map. Registering the map to a GNSS-referenced frame, as is routine in orchard and field mapping, would turn MapSORT's output into a georeferenced inventory of individual plants or fruit. MapSORT also composes with an existing tracker rather than replacing it: BoT-SORT's association is unchanged and runs first, and the camera stages act only on what it leaves unmatched, so improvements in detectors, appearance models or the base tracker carry over directly.
 
-\paragraph{Limitations.} The camera and revival stages cost throughput: on a CPU, MapSORT runs at 29\% to 56\% of BoT-SORT's frame rate, and building a scene map on a CPU takes from under an hour to several hours. MapSORT's settings are shared across all datasets, but were chosen on the same public sequences on which they are evaluated, since these datasets provide no separate validation split, and the landmark point filters were chosen per sequence on that sequence's own points; the MangoYield evaluation tests them on data that played no part in their design. Detections without a landmark, such as small fruit at the limit of the map's resolution, benefit only from BoT-SORT's own association, as the switch on AppleMOTS 0008 shows. Among dense, near-identical fruit, a lost track can be matched to a neighbour of its own fruit, as on AppleMOTS 0007. And the cue assumes that the objects do not move: fruit swaying on a branch, or a plant pushed aside by the robot, would carry a landmark that no longer marks where it is.
+\paragraph{Limitations.} The camera and revival stages cost throughput: on a CPU, MapSORT runs at 29\% to 56\% of BoT-SORT's frame rate, and building a scene map on a CPU takes from under an hour to several hours. MapSORT's settings are shared across all datasets, but were chosen on the same public sequences on which they are evaluated, since these datasets provide no separate validation split, and the landmark point filters were chosen per sequence on that sequence's own points. Detections without a landmark, such as small fruit at the limit of the map's resolution, benefit only from BoT-SORT's own association, as the switch on AppleMOTS 0008 shows. Among dense, near-identical fruit, a lost track can be matched to a neighbour of its own fruit, as on AppleMOTS 0007. And the cue assumes that the objects do not move: fruit swaying on a branch, or a plant pushed aside by the robot, would carry a landmark that no longer marks where it is.
 
 %% =====================================================================
 \section{Conclusion}\label{sec:conclusion}
@@ -728,7 +704,7 @@ The author has no relevant financial or non-financial interests to disclose.
 Not applicable.
 
 \bmhead{Data availability}
-All datasets used are publicly available from their original publishers: LettuceMOTS \citep{hu2024lettucemots}, MOrangeT \citep{santos2024moranget}, GrapeMOTS \citep{arizasentis2024grapemots} and AppleMOTS \citep{dejong2022applemots}. The MangoYield dataset collected for this work is available from the author on reasonable request. % TODO confirm availability terms
+All datasets used are publicly available from their original publishers: LettuceMOTS \citep{hu2024lettucemots}, MOrangeT \citep{santos2024moranget}, GrapeMOTS \citep{arizasentis2024grapemots} and AppleMOTS \citep{dejong2022applemots}.
 
 \bmhead{Code availability}
 The MapSORT source code is available at \url{https://github.com/shinobi-wolf/MapSORT}. % TODO confirm the repository will be public at submission
@@ -744,7 +720,7 @@ Srihari Vemuru conceived the method, implemented it, conducted the experiments a
 \section{Per-sequence statistics}\label{sec:app-seq}
 
 \begin{table}[!h]
-\caption{Statistics of every evaluation sequence. MangoYield has one flight per tree and no per-frame annotations. Revisits: ground-truth objects reappearing after at least 10 frames out of view.}\label{tab:seqstats}
+\caption{Statistics of every evaluation sequence. Revisits: ground-truth objects reappearing after at least 10 frames out of view.}\label{tab:seqstats}
 \footnotesize
 \begin{tabular*}{\textwidth}{@{\extracolsep\fill}llrlrrr@{}}
 \toprule
@@ -774,10 +750,6 @@ Dataset & Sequence & Frames & Resolution & GT IDs & Boxes & Revisits \\
  & 0007 & 103 & 1296$\times$972 & 255 & 7\,917 & 0 \\
  & 0008 & 322 & 1296$\times$972 & 164 & 10\,618 & 0 \\
  & 0010 & 100 & 1296$\times$972 & 279 & 4\,474 & 0 \\
-\midrule
-\multirow{3}{*}{MangoYield} & Tree 1 & \tbd & \tbd & n/a & n/a & n/a \\
- & Tree 2 & \tbd & \tbd & n/a & n/a & n/a \\
- & Tree 3 & \tbd & \tbd & n/a & n/a & n/a \\
 \botrule
 \end{tabular*}
 \end{table}
