@@ -23,6 +23,12 @@ DEFAULT_REGISTRY = REPO_ROOT / "config" / "datasets.yaml"
 DEFAULT_CONFIG = REPO_ROOT / "config" / "mapsort.yaml"
 
 
+def reid_weights(model: str) -> str:
+    """A fine-tuned model's weights, models/reid/<model>.pt, else the boxmot profile name as given."""
+    path = REPO_ROOT / "models" / "reid" / f"{model}.pt"
+    return str(path) if path.exists() else model
+
+
 def data_root() -> Path:
     env = os.environ.get("MAPSORT_DATA")
     return Path(env).expanduser() if env else REPO_ROOT / "data"

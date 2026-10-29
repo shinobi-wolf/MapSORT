@@ -18,7 +18,7 @@ TEX = PAPER / "sn-article.tex"
 RESULTS = PAPER / "results"
 
 METRICS = ["HOTA", "AssA", "DetA", "MOTA", "IDF1", "IDSW", "CE", "RIP"]
-TRACKERS = ["BoT-SORT", "SAM2MOT", "MapSORT"]
+TRACKERS = ["BoT-SORT", "StrongSORT", "Deep OC-SORT", "MapSORT"]
 SEQ_LABELS = {  # tab_sequences / tab_runtime / fig_gate sequence -> label used in the tex rows
     "LettuceMOTS 0011": "LettuceMOTS 0011",
     "MOrangeT V01": "MOrangeT V01",
@@ -34,7 +34,8 @@ GATE_SERIES = {  # fig_gate sequence -> pgfplots style of its series
 GAP_STYLE = {
     "MapSORT": "fill=clm!75!black",
     "BoT-SORT": "fill=black!35",
-    "SAM2MOT": "fill=black!12, draw=black!50, dotted",
+    "StrongSORT": "fill=cmap!45",
+    "Deep OC-SORT": "fill=capp!50",
 }
 GAP_BINS = {"10-29": "10 to 29", "30-59": "30 to 59", "60-119": "60 to 119", ">=120": r"$\geq$120"}
 
@@ -88,8 +89,9 @@ def bolded(metric: str, column: list[str]) -> list[str]:
 def env(tex: str, label: str) -> tuple[int, int]:
     """Span of the table/figure environment holding \\label{label}."""
     at = tex.index(rf"\label{{{label}}}")
-    start = max(tex.rfind(r"\begin{table}", 0, at), tex.rfind(r"\begin{figure}", 0, at))
-    end = min(i for i in (tex.find(r"\end{table}", at), tex.find(r"\end{figure}", at)) if i != -1)
+    kinds = ("table", "sidewaystable", "figure")
+    start = max(tex.rfind(rf"\begin{{{k}}}", 0, at) for k in kinds)
+    end = min(i for i in (tex.find(rf"\end{{{k}}}", at) for k in kinds) if i != -1)
     return start, end
 
 
@@ -102,7 +104,7 @@ def fill_grouped(tex: str, label: str, rows: list[dict[str, str]], key: str, gro
         by_group.setdefault(group_of(r[key]), {})[r["tracker"]] = r
     lines, group = block.split("\n"), None
     for i, line in enumerate(lines):
-        m = re.match(r"^(\\multirow\{3\}\{\*\}\{(.*)\}|\s*) & (" + "|".join(TRACKERS) + r") & .*\\\\\s*$", line)
+        m = re.match(r"^(\\multirow\{\d+\}\{\*\}\{(.*)\}|\s*) & (" + "|".join(map(re.escape, TRACKERS)) + r") & .*\\\\\s*$", line)
         if not m:
             continue
         if m.group(2):
@@ -128,6 +130,27 @@ def fill_ablation(tex: str) -> str:
         for v in variants:
             if line.startswith(v + " &"):
                 lines[i] = f"{v} & " + " & ".join(cols[c][variants.index(v)] for c in columns) + r" \\"
+    return tex[:start] + "\n".join(lines) + tex[end:]
+
+
+def fill_perseq(tex: str) -> str:
+    """tab:perseq: one row per sequence, HOTA / IDF1 / IDSW of every tracker, best per sequence bold."""
+    by_seq: dict[tuple[str, str], dict[str, dict[str, str]]] = {}
+    for r in read("tab_perseq.csv"):
+        by_seq.setdefault((r["dataset"], r["sequence"].replace("_", r"\_")), {})[r["tracker"]] = r
+    start, end = env(tex, "tab:perseq")
+    lines, dataset = tex[start:end].split("\n"), None
+    for i, line in enumerate(lines):
+        m = re.match(r"^(\\multirow\{\d+\}\{\*\}\{(\w+)\}|\s*) & ([\w\\]+) & .*\\\\\s*$", line)
+        if not m:
+            continue
+        dataset = m.group(2) or dataset
+        data = by_seq.get((dataset, m.group(3)))
+        if not data:
+            continue
+        columns = {mt: bolded(mt, [data.get(t, {}).get(mt, "") for t in TRACKERS]) for mt in ("HOTA", "IDF1", "IDSW")}
+        cells = [columns[mt][k] for k in range(len(TRACKERS)) for mt in ("HOTA", "IDF1", "IDSW")]
+        lines[i] = f"{m.group(1)} & {m.group(3)} & " + " & ".join(cells) + r" \\"
     return tex[:start] + "\n".join(lines) + tex[end:]
 
 
@@ -168,9 +191,8 @@ def fill_gate(tex: str) -> str:
 
 def fill_gap(tex: str) -> str:
     rows = read("fig_gap.csv")
-    order = ("BoT-SORT", "SAM2MOT", "MapSORT")
-    present = [t for t in order if any(r["tracker"] == t for r in rows)]
-    missing = [t for t in order if t not in present]
+    present = [t for t in TRACKERS if any(r["tracker"] == t for r in rows)]
+    missing = [t for t in TRACKERS if t not in present]
     start, end = env(tex, "fig:gap")
     block = tex[start:end]
     # Plots sit between the axis options' closing "]" line and \end{axis}.
@@ -200,6 +222,7 @@ def main() -> None:
         "AppleMOTS 0008": r"\shortstack[l]{AppleMOTS\\0008}",
     }
     tex = fill_grouped(tex, "tab:seq", read("tab_sequences.csv"), "sequence", lambda s: seq_group[s])
+    tex = fill_perseq(tex)
     tex = fill_ablation(tex)
     tex = fill_runtime(tex)
     tex = fill_gate(tex)

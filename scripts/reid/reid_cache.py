@@ -5,10 +5,12 @@ Each frame's stored detections go through boxmot's own embedding path
 fed these rows sees the same features it would have computed itself. Valid only
 while `dets/<seq>.txt` is unchanged: the file's sha256 is stored and must match.
 
-Writes `reid/<seq>/<model>.npz`, one row per line of `dets/<seq>.txt`, in that order.
+Writes `reid/<seq>/<model>.npz`, one row per line of `dets/<seq>.txt`, in that order. A model with
+weights at `models/reid/<model>.pt` (scripts/reid/finetune.py) is loaded from there.
 
 Usage:
     python scripts/reid/reid_cache.py --dataset grapemots --seqs PathPlanning_1 PathPlanning_7
+    python scripts/reid/reid_cache.py --dataset grapemots --seqs PathPlanning_1 --model osnet-x0-25-grapemots
 """
 
 from __future__ import annotations
@@ -25,7 +27,7 @@ from boxmot.reid.specs import ReIDConfig
 from boxmot.trackers.strongsort.config import StrongSortConfig
 from boxmot.trackers.strongsort.tracker import StrongSort
 
-from mapsort.data import DEFAULT_CONFIG, data_root, sequence
+from mapsort.data import DEFAULT_CONFIG, data_root, reid_weights, sequence
 
 
 def build(seq, reid: dict, force: bool) -> None:
@@ -49,7 +51,7 @@ def build(seq, reid: dict, force: bool) -> None:
     scores = rows[:, 6].astype(np.float32)
     class_ids = rows[:, 7].astype(np.float32)
 
-    tracker = StrongSort(config=StrongSortConfig(), reid=ReIDConfig(**reid))
+    tracker = StrongSort(config=StrongSortConfig(), reid=ReIDConfig(**{**reid, "model": reid_weights(reid["model"])}))
     images = seq.image_paths()
     embedding = None
     start = time.time()
@@ -83,10 +85,13 @@ def main() -> None:
     ap.add_argument("--dataset", required=True)
     ap.add_argument("--split", default="test")
     ap.add_argument("--seqs", nargs="+", required=True)
+    ap.add_argument("--model", help="default: pipeline.tracker.reid.model in config/mapsort.yaml")
     ap.add_argument("--force", action="store_true", help="rebuild even if the dets hash matches")
     args = ap.parse_args()
 
     reid = yaml.safe_load(DEFAULT_CONFIG.read_text())["pipeline"]["tracker"]["reid"]
+    if args.model:
+        reid["model"] = args.model
     for name in args.seqs:
         build(sequence(args.dataset, args.split, name), reid, args.force)
 

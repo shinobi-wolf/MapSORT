@@ -4,11 +4,15 @@
 # mapping backends it has landmarks from, as landmarks/<seq>/<backend>.npz.
 # `masks` names the sequences with masks/<seq>/, and `reid` maps a sequence to the
 # ReID models it has cached embeddings from, as reid/<seq>/<model>.npz.
+# Eval uses the first; osnet-x0-25-<dataset> is fine-tuned on that dataset's `train` split
+# (scripts/reid/finetune.py, config/reid_finetune.yaml).
 
 # Upstream ships every sequence as test, each with its own COLMAP model (recon/<seq>/sparse).
+# V03 and V04 are held out of test as ReID fine-tuning data.
 moranget:
   splits:
     test: ["V01", "V02", "V05", "V06", "V07", "V08", "V09", "V10", "V11", "V12"]
+    train: ["V03", "V04"]
   dets: ["V01", "V02", "V05", "V06", "V07", "V08", "V09", "V10", "V11", "V12"]
   landmarks:
     V01: ["sfm", "sfm_point"]
@@ -23,21 +27,22 @@ moranget:
     V12: ["sfm", "sfm_point"]
   recon: ["V01", "V02", "V05", "V06", "V07", "V08", "V09", "V10", "V11", "V12"]
   reid:
-    V01: ["osnet-x0-25-msmt17"]
-    V02: ["osnet-x0-25-msmt17"]
-    V05: ["osnet-x0-25-msmt17"]
-    V06: ["osnet-x0-25-msmt17"]
-    V07: ["osnet-x0-25-msmt17"]
-    V08: ["osnet-x0-25-msmt17"]
-    V09: ["osnet-x0-25-msmt17"]
-    V10: ["osnet-x0-25-msmt17"]
-    V11: ["osnet-x0-25-msmt17"]
-    V12: ["osnet-x0-25-msmt17"]
+    V01: ["osnet-x0-25-moranget", "osnet-x0-25-msmt17"]
+    V02: ["osnet-x0-25-moranget", "osnet-x0-25-msmt17"]
+    V05: ["osnet-x0-25-moranget", "osnet-x0-25-msmt17"]
+    V06: ["osnet-x0-25-moranget", "osnet-x0-25-msmt17"]
+    V07: ["osnet-x0-25-moranget", "osnet-x0-25-msmt17"]
+    V08: ["osnet-x0-25-moranget", "osnet-x0-25-msmt17"]
+    V09: ["osnet-x0-25-moranget", "osnet-x0-25-msmt17"]
+    V10: ["osnet-x0-25-moranget", "osnet-x0-25-msmt17"]
+    V11: ["osnet-x0-25-moranget", "osnet-x0-25-msmt17"]
+    V12: ["osnet-x0-25-moranget", "osnet-x0-25-msmt17"]
 
-# Upstream ships every sequence as test.
+# Upstream ships every sequence as test; the unused four are ReID fine-tuning data.
 grapemots:
   splits:
     test: ["PathPlanning_1", "PathPlanning_2", "PathPlanning_3", "PathPlanning_7"]
+    train: ["PathPlanning_4", "PathPlanning_5", "PathPlanning_6", "PathPlanning_8"]
   dets: ["PathPlanning_1", "PathPlanning_2", "PathPlanning_3", "PathPlanning_7"]
   landmarks:
     PathPlanning_1: ["sfm", "sfm_point"]
@@ -47,10 +52,10 @@ grapemots:
   recon: ["PathPlanning_1", "PathPlanning_2", "PathPlanning_3", "PathPlanning_7"]
   masks: ["PathPlanning_1", "PathPlanning_2", "PathPlanning_3", "PathPlanning_7"]
   reid:
-    PathPlanning_1: ["osnet-x0-25-msmt17"]
-    PathPlanning_2: ["osnet-x0-25-msmt17"]
-    PathPlanning_3: ["osnet-x0-25-msmt17"]
-    PathPlanning_7: ["osnet-x0-25-msmt17"]
+    PathPlanning_1: ["osnet-x0-25-grapemots", "osnet-x0-25-msmt17"]
+    PathPlanning_2: ["osnet-x0-25-grapemots", "osnet-x0-25-msmt17"]
+    PathPlanning_3: ["osnet-x0-25-grapemots", "osnet-x0-25-msmt17"]
+    PathPlanning_7: ["osnet-x0-25-grapemots", "osnet-x0-25-msmt17"]
 
 # Upstream testing 0011 and 0012 repeat 0007 and 0008 (same masks, locally edited
 # pixels), so they are left out; their mot/, dets/, masks/ and landmarks/ remain on disk.
@@ -67,15 +72,17 @@ applemots:
   recon: ["0000", "0001", "0002", "0003", "0004", "0005", "0006", "0007", "0008", "0010"]
   masks: ["0006", "0007", "0008", "0010"]
   reid:
-    "0006": ["osnet-x0-25-msmt17"]
-    "0007": ["osnet-x0-25-msmt17"]
-    "0008": ["osnet-x0-25-msmt17"]
-    "0010": ["osnet-x0-25-msmt17"]
+    "0006": ["osnet-x0-25-applemots", "osnet-x0-25-msmt17"]
+    "0007": ["osnet-x0-25-applemots", "osnet-x0-25-msmt17"]
+    "0008": ["osnet-x0-25-applemots", "osnet-x0-25-msmt17"]
+    "0010": ["osnet-x0-25-applemots", "osnet-x0-25-msmt17"]
 
-# Upstream's held-out sequences; the nine train sequences' frames are not downloaded.
+# Upstream's held-out sequences; of the nine train sequences only the four used for ReID
+# fine-tuning have their frames downloaded.
 lettucemots:
   splits:
     test: ["0003", "0007", "0011"]
+    train: ["0000", "0004", "0008", "0009"]
   dets: ["0003", "0007", "0011"]
   recon: ["0003", "0007", "0011"]
   masks: ["0003", "0007", "0011"]
@@ -84,6 +91,6 @@ lettucemots:
     "0007": ["sfm", "sfm_point"]
     "0011": ["sfm", "sfm_point"]
   reid:
-    "0003": ["osnet-x0-25-msmt17"]
-    "0007": ["osnet-x0-25-msmt17"]
-    "0011": ["osnet-x0-25-msmt17"]
+    "0003": ["osnet-x0-25-lettucemots", "osnet-x0-25-msmt17"]
+    "0007": ["osnet-x0-25-lettucemots", "osnet-x0-25-msmt17"]
+    "0011": ["osnet-x0-25-lettucemots", "osnet-x0-25-msmt17"]

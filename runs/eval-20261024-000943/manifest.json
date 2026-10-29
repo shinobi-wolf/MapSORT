@@ -1,0 +1,90 @@
+{
+  "config": {
+    "eval": {
+      "data": {
+        "config": "config/datasets.yaml"
+      },
+      "metrics": {
+        "count_error": {
+          "report": [
+            "CE"
+          ]
+        },
+        "revisit": {
+          "gap_bins": [
+            10,
+            30,
+            60,
+            120
+          ],
+          "grace": 5,
+          "min_gap": 10,
+          "report": [
+            "RIP"
+          ]
+        },
+        "tracking": {
+          "backend": "trackeval",
+          "do_preproc": false,
+          "iou_threshold": 0.5,
+          "report": [
+            "HOTA",
+            "AssA",
+            "DetA",
+            "MOTA",
+            "IDF1",
+            "IDSW"
+          ]
+        }
+      },
+      "models": {
+        "botsort": {
+          "hp": {},
+          "impl": "boxmot"
+        },
+        "deepocsort": {
+          "hp": {},
+          "impl": "boxmot"
+        },
+        "mapsort": {
+          "hp": {
+            "landmarks": {
+              "gate": 200,
+              "reprojection": 1.0
+            }
+          },
+          "impl": "mapsort"
+        },
+        "sam2mot": {
+          "hp": {
+            "segmentor": {
+              "artifact": "sam2.1_l.pt",
+              "backend": "sam"
+            }
+          },
+          "impl": "boxmot-v25.0.0"
+        },
+        "strongsort": {
+          "hp": {},
+          "impl": "boxmot"
+        }
+      }
+    },
+    "tables": [
+      "main",
+      "sequences",
+      "ablation",
+      "gate",
+      "gap",
+      "runtime"
+    ]
+  },
+  "created": "2026-10-24T00:09:43.811163+00:00",
+  "git": {
+    "branch": "pivot/camera-resection",
+    "commit": "9f241bf55951ad0a2b25e9b8f06ff83c8a69b76e",
+    "dirty": true
+  },
+  "module": "eval",
+  "run_id": "eval-20261024-000943"
+}
