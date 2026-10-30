@@ -77,47 +77,87 @@
 %% =====================================================================
 \section{Introduction}\label{sec:intro}
 
-Many precision-agriculture tasks operate at the level of the individual plant or fruit. Yield estimation from video counts fruit by counting tracks \citep{stein2016mango,liu2019monocular,hani2020comparative,villacres2023apple}. Per-plant phenotyping attaches measurements from successive frames and passes to the same plant. Selective spraying and harvesting require an agricultural robot to know which plant it is looking at. All of these depend on multi-object tracking (MOT) that assigns each physical object one identity, and keeps it, for as long as the object is in the video.
+% ---------------- Beat 1: the need ----------------
+Precision agriculture is moving from field-level statistics to operations on individual plants and fruit.
+Selective harvesting robots pick only the ripe fruit and leave the rest \citep{rajendran2024selective};
+targeted sprayers apply agrochemicals where sensing detects a target instead of covering the whole orchard \citep{mahmud2021precision,wu2025orchard};
+and plant-level management and phenotyping aim to sense, and treat, plants individually rather than by field, and to measure their fine-scale traits \citep{sarkar2024cyber,xu2022phenotyping}.
 
-Agricultural video makes this hard in a specific way. Plants in a row, oranges on a tree and grape bunches on a cane are visually near-identical, so appearance embeddings learned for pedestrians separate them poorly. Leaves, branches and neighbouring fruit occlude them. Most importantly, the camera routinely leaves an object and comes back to it: a ground robot drives a row and returns along it, a handheld camera sweeps the canopy more than once, a UAV inspects a vine from several perspectives. Tracking-by-detection methods \citep{bewley2016sort,wojke2017deepsort,zhang2022bytetrack,aharon2022botsort,du2023strongsort} predict object motion in the image plane and keep an unmatched track alive for a fixed number of frames. An object that is out of view for longer is deleted and receives a new identity when it reappears. Every such switch inflates the count and fragments the plant's record (Fig.~\ref{fig:teaser}).
+Each of these operations needs a plant or fruit to keep one identity across the whole video.
+The fruit a robot has chosen to pick must still be that fruit when the arm reaches it; the treatments and measurements a plant receives must accumulate on a single record; and a fruit seen again from another side must not become a second fruit.
+Identity must hold when the camera leaves an object and later returns to it, as on the return pass of a field robot along a row, in a UAV flight that views a vineyard from several perspectives, or in a handheld sweep around a tree.
+When identity breaks, the consequence is physical rather than statistical: a fruit is picked or treated twice, or skipped.
+Counting is the coarsest of these tasks, since every identity switch adds a phantom plant to the total.
 
-The targets of agricultural tracking have a property that pedestrians and vehicles do not: they are stationary. A lettuce occupies the same place in the field on the outbound and return pass; an orange hangs at the same point of the canopy however often the camera sweeps past it. Its position in a three-dimensional map of the scene is therefore an identity cue that does not decay with time out of view and does not depend on appearance. Structure-from-motion (SfM) recovers such a map from the same monocular RGB video the tracker consumes \citep{schonberger2016colmap}.
+% ---------------- Beat 2: current SOTA and their gap ----------------
+The state of the art for tracking plants and fruit in video is tracking-by-detection.
+StrongSORT \citep{du2023strongsort}, Deep OC-SORT \citep{maggiolino2023deepocsort} and BoT-SORT \citep{aharon2022botsort} detect objects in every frame and associate the detections with existing tracks mainly through appearance: a re-identification embedding of each detection is compared with those of the tracks, while image-plane motion, through a Kalman-filter prediction and camera-motion compensation, supports and gates the match.
+This works when targets are visually distinct and mostly stay in view, as in the pedestrian tracking these trackers were developed for.
 
-\begin{figure}[b]
+These trackers fail to keep one identity per plant or fruit once the camera leaves an object and returns to it, and to tell apart neighbouring objects of the same crop.
+There are three reasons.
+First, plants and fruit of one crop look almost alike, so appearance separates them poorly, and what does differ, such as viewpoint, occlusion and lighting, changes between passes.
+Second, motion cues are tied to the image plane and to recent frames; camera motion, and in a canopy the parallax it produces, breaks them.
+Third, a track is deleted once it has been lost for longer than a buffer, because beyond that horizon its image-plane prediction is no longer informative; an object that stays out of view for longer is forgotten by construction and receives a new identity when it returns.
+Stronger appearance models and better motion compensation improve short-term association, but not this.
+Fig.~\ref{fig:teaser} shows the result: on the return pass of a field robot along two lettuce rows (LettuceMOTS; \citealt{hu2024lettucemots}), BoT-SORT has issued 56 identities for 37 plants, and every plant in view carries a new one.
+Each such switch is a phantom plant or fruit, which defeats any task that must act on a specific one.
+
+\begin{figure}[t]
 \centering
 \includegraphics[width=\textwidth]{figures/botsort_vs_mapsort.png}
-\caption{The same frame of a field robot's return pass along two lettuce rows (LettuceMOTS 0011), tracked by BoT-SORT (left) and MapSORT (right). Identities are numbered in order of first appearance. BoT-SORT has forgotten the plants it saw on the way out and has issued 56 identities for 37 plants; every plant in view carries a new one. MapSORT gives each plant the identity it received on the outbound pass and has issued 39.}
+\caption{The same frame of a field robot's return pass along two lettuce rows (LettuceMOTS 0011), tracked by BoT-SORT (left) and MapSORT (right). Identities are numbered in order of first appearance. BoT-SORT has issued 56 identities for 37 plants; MapSORT keeps the identity each plant received on the outbound pass and has issued 39.}
 \label{fig:teaser}
 \end{figure}
 
-A stationary object's map position is only useful for tracking if it can be compared with what the camera sees now. Comparing positions in 3D, as earlier fruit trackers do, is fragile: a landmark triangulated from a few keypoints is uncertain mostly along the viewing ray, which is exactly the direction that separates neighbouring fruit in depth. Projecting the landmark into the current image removes that direction, but needs the current camera. This paper presents MapSORT, which obtains that camera from the tracker itself. Every frame, the tracks that a standard frame-to-frame tracker has just matched supply correspondences between their landmarks and their boxes, and a robust resection recovers the frame's camera from them. With the camera, every stationary object, tracked, lost or long gone, has a predicted position in the current image. MapSORT uses it twice: as a motion model that re-matches tracks the frame-to-frame association missed, and as a re-identification cue that revives a track when its object comes back into view, however long it was away.
+% ---------------- Beat 3: insight and overview ----------------
+Agricultural targets do not move, and this is the property that sets them apart from pedestrians.
+A stationary object's position in a map of the scene does not age: unlike appearance and image-plane motion, it is as valid after a long absence as after a short one.
+Position can therefore serve as an identity memory that outlasts the track buffer, which is exactly what the failures above lack.
 
+MapSORT builds this memory on top of BoT-SORT \citep{aharon2022botsort}, whose own association runs first and is left unchanged.
+A scene map is reconstructed once per sequence by structure-from-motion \citep{schonberger2016colmap}, and every detection and track receives a Gaussian landmark, a position in the map together with its uncertainty.
+At every frame, a camera is fitted to the tracker's own landmark and box correspondences, with a plane model for near-planar scenes such as a lettuce field, and this camera predicts where each stationary object should appear in the image, including just beyond the frame edge.
+Two stages use it: a map-motion stage re-matches the tracks that BoT-SORT left unmatched where the camera places them, and a revival stage reclaims the identity of lost tracks by reprojection.
+Tracks that leave the view are kept dormant rather than deleted, so an object can reclaim its identity after an absence of any length.
+Because every track also carries a position in the scene map, a track list is at the same time a map of the plants, which is what an operation on a specific plant needs in addition to an identity.
+
+% ---------------- Contributions ----------------
 The contributions of this work are:
 \begin{enumerate}
-\item A per-frame camera resection from the tracker's own landmark-to-box correspondences, robust to wrong matches and to near-coplanar scenes such as a field of lettuce, which places every stationary object, visible or not, in the current image.
-\item MapSORT, which adds two stages to BoT-SORT \citep{aharon2022botsort}: a map-motion stage that re-matches unmatched tracks where the camera places them, and a revival stage that reclaims the identity of lost and dormant tracks by reprojection, including objects that re-enter at the frame edge with only a sliver visible. Tracks that leave the view are kept dormant instead of deleted, so identity survives absences of any length.
-\item A revisit-centred evaluation protocol: a revisit identity preservation rate that decomposes CLEAR identity switches by the absence that preceded them, together with count error, which is the quantity yield estimation consumes.
-\item A benchmark against StrongSORT, Deep OC-SORT and BoT-SORT on four public agricultural datasets (LettuceMOTS, MOrangeT, GrapeMOTS and AppleMOTS), covering four crops, four platforms and three viewing patterns, with per-sequence results.
+  \item A Gaussian landmark for every detection and track, compared through a Mahalanobis gate that is invariant to the unknown scale of a monocular reconstruction (Proposition~\ref{prop:scale}), and a per-frame camera resection from the tracker's own landmark-to-box correspondences, robust to wrong matches and to near-coplanar scenes such as a field of lettuce, which places every stationary object, visible or not, in the current image.
+  \item MapSORT, which adds two stages to BoT-SORT \citep{aharon2022botsort}: a map-motion stage that re-matches unmatched tracks where the camera places them, and a revival stage that reclaims the identity of lost and dormant tracks by reprojection, including objects that re-enter at the frame edge with only a sliver visible. Tracks that leave the view are kept dormant instead of deleted, so identity survives absences of any length.
+  \item A revisit-centred evaluation protocol: a revisit identity preservation rate that decomposes CLEAR identity switches \citep{bernardin2008clear} by the absence that preceded them, together with count error, the quantity that yield estimation consumes.
+  \item A benchmark against StrongSORT \citep{du2023strongsort}, Deep OC-SORT \citep{maggiolino2023deepocsort} and BoT-SORT \citep{aharon2022botsort} on four public agricultural datasets, LettuceMOTS \citep{hu2024lettucemots}, MOrangeT \citep{santos2024moranget}, GrapeMOTS \citep{arizasentis2024grapemots} and AppleMOTS \citep{dejong2022applemots}, covering four crops, four platforms and three viewing patterns, with per-sequence results.
 \end{enumerate}
+
+% ---------------- Section overview ----------------
+The remainder of this paper is organised as follows.
+Section~\ref{sec:related} reviews related work.
+Section~\ref{sec:methods} describes the method, together with the datasets, baselines and evaluation metrics, including the revisit protocol.
+Section~\ref{sec:results} reports the comparison with the baselines, identity persistence by length of absence, an ablation, the sensitivity to the landmark gate and runtime.
+Section~\ref{sec:discussion} analyses the results dataset by dataset, discusses the consequences for precision agriculture and states the limitations, and Section~\ref{sec:conclusion} concludes.
 
 %% =====================================================================
 \section{Related work}\label{sec:related}
 
-\subsection{Tracking-by-detection}
+% ---------------- Paragraph 1: tracking-by-detection in agriculture ----------------
+Counting and tracking fruit in video is commonly done by tracking-by-detection: a detector finds the fruit in every frame, a tracker links the detections into identities, and the identities are then counted.
+OrangeSORT builds on DeepSORT for citrus counting \citep{zhang2022citrus}, \citet{wang2019mango} pair a mango detector with a Kalman filter and Hungarian assignment, and \citet{osman2021yield} estimate apple yield from video with a modified DeepSORT.
+Public datasets with per-object identity annotations now allow tracking itself to be evaluated, not only the final count: LettuceMOTS \citep{hu2024lettucemots}, MOrangeT \citep{santos2024moranget}, GrapeMOTS \citep{arizasentis2024grapemots} and AppleMOTS \citep{dejong2022applemots}.
+Trackers built on promptable segmentation foundation models have also recently appeared, such as SAM2MOT \citep{jiang2026sam2mot}, which places segmentation at the centre of tracking and runs zero-shot.
 
-SORT \citep{bewley2016sort} established the tracking-by-detection template: a constant-velocity Kalman filter \citep{kalman1960} predicts each track's box, and Hungarian matching \citep{kuhn1955hungarian} on intersection-over-union (IoU) assigns detections to tracks. DeepSORT \citep{wojke2017deepsort} added an appearance embedding and a matching cascade that prioritises recently seen tracks. ByteTrack \citep{zhang2022bytetrack} recovers low-confidence detections in a second association round; OC-SORT \citep{cao2023ocsort} corrects Kalman drift during occlusion from observations, and Deep OC-SORT \citep{maggiolino2023deepocsort} adds camera-motion compensation and an appearance cost whose weight adapts to how distinctive each detection's embedding is; FairMOT \citep{zhang2021fairmot} learns detection and embedding jointly. StrongSORT \citep{du2023strongsort} modernises DeepSORT with a stronger re-identification backbone and fused appearance and motion costs. BoT-SORT \citep{aharon2022botsort} compensates camera motion with a global image warp, refines the Kalman state, and fuses IoU and appearance costs; it is the base of MapSORT. SAM2MOT \citep{jiang2025sam2mot} departs from box association altogether: it uses the SAM~2 video segmentation model \citep{ravi2024sam2} to propagate object masks through time, so identity follows from segmentation rather than from matching.
+% ---------------- Paragraph 2: position as an association cue (existence only) ----------------
+Position has also been used as a cue for stationary produce.
+\citet{santos2024moranget} relocalise fruit in 3D to handle occluded and re-appearing oranges, \citet{liu2019monocular} combine monocular structure-from-motion with semantic data association to map fruit in 3D, though only to count them, without evaluating tracking, and LocalizeSORT \citep{vemuru2024localizesort}, a preprint, adds a world-coordinate term to the association cost.
 
-All of these methods reason about identity in the image plane or in an appearance space. Neither is stable when the camera leaves an object and returns: image-plane motion over a long absence is not predictable, a global warp cannot follow the parallax of a three-dimensional canopy, and appearance galleries are bounded in both size and age. MapSORT keeps BoT-SORT's appearance and motion machinery and adds a cue that remains valid over any absence.
-
-\subsection{Tracking and counting in crops and orchards}
-
-Video-based fruit counting tracks fruit to avoid counting it more than once. \citet{halstead2018fruit} tracked sweet pepper with IoU association on a robotic platform. \citet{hani2020comparative} compared detection and counting pipelines for apple yield mapping, and \citet{villacres2023apple} compared tracking-by-detection algorithms for apple production estimation. \citet{hu2022lettucemot} released LettuceMOT with back-and-forth and out-and-in robot trajectories and showed that re-occurring plants defeat standard trackers; the same group introduced LettuceMOTS with a shape-feature MOTS method for precision spraying \citep{hu2024lettucemots}. Datasets for homogeneous-object MOTS exist for apples \citep{dejong2022applemots} and grape bunches captured from multiple UAV perspectives \citep{arizasentis2024grapemots}, following the MOTS task definition of \citet{voigtlaender2019mots}.
-
-\subsection{Three-dimensional localisation for fruit identity}
-
-Several works use multi-view geometry to localise fruit. \citet{stein2016mango} triangulated mango detections from a GNSS/INS-referenced vehicle to count fruit per tree. \citet{liu2019monocular} combined monocular SfM with semantic data association to count and map fruit. \citet{genemola2020sfm} projected instance segmentations onto an SfM point cloud to locate apples in 3D. \citet{rapado2023tomato} tracked tomatoes in 3D from a robot arm with known camera poses. \citet{santos2024moranget} relocalised oranges in 3D to recover them after occlusion and showed that removing relocalisation more than halves HOTA on MOrangeT.
-
-These approaches either compare fruit positions in 3D with a fixed, hand-tuned distance threshold, or rely on camera poses from the reconstruction or an external sensor. MapSORT differs in three ways. Its landmarks are Gaussians whose uncertainty shrinks as observations are fused, and its 3D gate is a Mahalanobis distance that does not depend on the arbitrary scale of a monocular reconstruction. It recovers the camera that relates the map to the current image from its own tracks in every frame, so the projection it compares against is consistent with what the tracker currently believes. And it integrates the landmark cue into a modern tracker as a motion model and a revival stage, rather than replacing association.
+% ---------------- Paragraph 3: the SORT lineage ----------------
+The trackers that this work builds on and compares with form one lineage.
+SORT \citep{bewley2016sort} predicts each track with a Kalman filter and assigns detections to tracks by the Hungarian method on box overlap, and DeepSORT \citep{wojke2017deepsort} adds a learned appearance embedding to the association cost.
+StrongSORT \citep{du2023strongsort} revisits DeepSORT with a stronger appearance model, camera-motion compensation by image alignment and an adaptive Kalman filter.
+Deep OC-SORT \citep{maggiolino2023deepocsort} adds observation-centric motion estimation, camera-motion compensation by sparse optical flow and adaptively weighted appearance.
+BoT-SORT \citep{aharon2022botsort} fuses motion and appearance costs after camera-motion compensation, and is the base tracker of MapSORT (Section~\ref{sec:methods}).
+Despite their differences, all of them associate detections with tracks over a local window of recent frames, and all delete a track once it has been lost for a fixed number of frames.
 
 %% =====================================================================
 \section{Materials and methods}\label{sec:methods}
