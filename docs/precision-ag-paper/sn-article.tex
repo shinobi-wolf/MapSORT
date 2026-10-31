@@ -149,7 +149,7 @@ Trackers built on promptable segmentation foundation models have also recently a
 
 % ---------------- Paragraph 2: position as an association cue (existence only) ----------------
 Position has also been used as a cue for stationary produce.
-\citet{santos2024moranget} relocalise fruit in 3D to handle occluded and re-appearing oranges, \citet{liu2019monocular} combine monocular structure-from-motion with semantic data association to map fruit in 3D, though only to count them, without evaluating tracking, and LocalizeSORT \citep{vemuru2024localizesort}, a preprint, adds a world-coordinate term to the association cost.
+\citet{liu2019monocular} combine monocular structure-from-motion with semantic data association to map fruit in 3D, though only to count them, without evaluating tracking, and LocalizeSORT \citep{vemuru2024localizesort}, a preprint, adds a world-coordinate term to the association cost.
 
 % ---------------- Paragraph 3: the SORT lineage ----------------
 The trackers that this work builds on and compares with form one lineage.
@@ -241,13 +241,13 @@ The scene map is a sparse SfM reconstruction of the sequence computed with COLMA
 
 \subsection{Landmark observations}\label{sec:obs}
 
-For detection $d_t^i$ with box $b_t^i$, let $\mathcal{P}_t^i=\{\bX_j\}_{j=1}^{n}$ be the 3D points whose keypoints in frame $t$ fall inside $b_t^i$. Three optional filters, chosen per sequence, remove points that belong to the background rather than the object or are poorly triangulated. A mask filter keeps only points whose keypoint falls on the detection's instance mask, optionally eroded by a few pixels where the mask boundary bleeds into the background; when no point falls on the mask, the points in the box are kept. A track-length filter keeps points observed in at least $\ell_{\min}$ frames. A depth filter drops points more than $k$ median absolute deviations deeper than the median camera-frame depth of the box's points, which removes background seen through gaps in the canopy. The landmark observation $z_t^i=(\bmu_t^i,\bSig_t^i,\bS_t^i)$ is
+For detection $d_t^i$ with box $b_t^i$, let $\mathcal{P}_t^i=\{\bX_j\}_{j=1}^{n}$ be the 3D points whose keypoints in frame $t$ fall inside $b_t^i$. Landmark filters remove points that belong to the background rather than the object or are poorly triangulated. A mask filter keeps only points whose keypoint falls on the detection's instance mask, with erosion to reduce background contamination at the mask boundary; when no point falls on the mask, the points in the box are kept. A track-length filter keeps points observed in at least $\ell_{\min}$ frames. A depth filter drops points more than $k$ median absolute deviations deeper than the median camera-frame depth of the box's points, which removes background seen through gaps in the canopy. The landmark observation $z_t^i=(\bmu_t^i,\bSig_t^i,\bS_t^i)$ is
 \begin{align}
 \bmu_t^i &= \operatorname{median}(\mathcal{P}_t^i), \label{eq:mu}\\
 \bS_t^i &= \operatorname{Cov}(\mathcal{P}_t^i) + r^2\bm{I}, \qquad r=\tfrac{1}{4}\,\lVert b_t^i\rVert\,\bar{z}/f, \label{eq:extent}\\
 \bSig_t^i &= \bS_t^i / n, \label{eq:cov}
 \end{align}
-where the median is taken per coordinate, $\lVert b_t^i\rVert$ is the box diagonal in pixels, $\bar z$ the median camera-frame depth of the points and $f$ the focal length. The extent $\bS_t^i$ is the object's physical spread in the map frame; the isotropic floor $r^2\bm{I}$, the object's apparent radius back-projected to its depth, keeps it well conditioned when only a few points survive. The covariance $\bSig_t^i$ is the uncertainty about where the object's \emph{centre} lies, which shrinks as more points support the estimate. Only $\bSig_t^i$ is fused across observations; the extent is a property of the plant or fruit and does not shrink however often the object is observed. A detection whose box encloses no usable point carries no landmark, $z_t^i=\varnothing$, and takes part only in BoT-SORT's association.
+where the median is taken per coordinate, $\lVert b_t^i\rVert$ is the box diagonal in pixels, $\bar z$ the median camera-frame depth of the points and $f$ the focal length. The extent $\bS_t^i$ is the object's physical spread in the map frame; the isotropic floor $r^2\bm{I}$, the object's apparent radius back-projected to its depth, keeps it well conditioned when only a few points survive. The covariance $\bSig_t^i$ is a nominal uncertainty about where the object's \emph{centre} lies: it shrinks as more points support the estimate and scales with the reconstruction, but it is not the sampling covariance of the per-coordinate median, which is larger and differently shaped. Only $\bSig_t^i$ is fused across observations; the extent is a property of the plant or fruit and does not shrink however often the object is observed. A detection whose box encloses no usable point carries no landmark, $z_t^i=\varnothing$, and takes part only in BoT-SORT's association.
 
 \subsection{Landmark fusion}\label{sec:fusion}
 
@@ -257,18 +257,19 @@ Each track $k$ maintains its landmark in information form, accumulating the prec
 \bEta_k=\sum_{(t,i)\in\tau_k}\big(\bSig_t^i\big)^{-1}\bmu_t^i,\qquad
 \hSig_k=\bLam_k^{-1},\quad \hmu_k=\bLam_k^{-1}\bEta_k. \label{eq:fusion}
 \end{equation}
-This is the static-state information filter \citep{thrun2005probabilistic}: because the object does not move, there is no process noise, and the fused covariance $\hSig_k$ contracts with every observation. Where MapSORT compares landmarks in 3D, it uses the squared Mahalanobis distance between an observation and a fused landmark under their combined uncertainty,
+This is the static-state information filter \citep{thrun2005probabilistic}: because the object does not move, there is no process noise. Observations of one object share map points of the same reconstruction, so they are not independent, and $\hSig_k$ understates the uncertainty of $\hmu_k$. The fused mean, a precision-weighted average of the observations, is not biased by this correlation. Where MapSORT compares landmarks in 3D, it uses the squared Mahalanobis distance between an observation and a fused landmark under their combined uncertainty,
 \begin{equation}
 d^2_{ki}=\big(\bmu_t^i-\hmu_k\big)^{\!\top}\big(\hSig_k+\bSig_t^i\big)^{-1}\big(\bmu_t^i-\hmu_k\big), \label{eq:maha}
 \end{equation}
-and forbids pairs with $d^2_{ki}>\tau$.
+and forbids pairs with $d^2_{ki}>\tau$. The combined covariance never falls below that of the current observation, so the gate does not tighten without bound as a track grows. $d^2_{ki}$ is therefore a normalised distance rather than a $\chi^2$ statistic, and $\tau$ is set empirically (Sect.~\ref{sec:res-gate}).
 
 \begin{proposition}\label{prop:scale}
-$d^2_{ki}$ is invariant to the similarity transform relating a monocular reconstruction to the metric scene.
+$d^2_{ki}$ is invariant to the scale and translation of a monocular reconstruction.
 \end{proposition}
 \begin{proof}
-Under $\bX\mapsto s\bm{R}\bX+\bm{t}$, every median, sample covariance, depth and back-projected radius in Eqs.~\eqref{eq:mu} to \eqref{eq:cov} transforms covariantly, so $\bmu\mapsto s\bm{R}\bmu+\bm{t}$ and $\bSig\mapsto s^2\bm{R}\bSig\bm{R}^{\top}$; Eq.~\eqref{eq:fusion} preserves this. The difference in Eq.~\eqref{eq:maha} scales by $s\bm{R}$ and the inverse covariance by $s^{-2}\bm{R}\,(\cdot)\,\bm{R}^\top$, which cancel.
+Under $\bX\mapsto s\bX+\bm{t}$, every per-coordinate median, sample covariance, depth and back-projected radius in Eqs.~\eqref{eq:mu} to \eqref{eq:cov} transforms covariantly, so $\bmu\mapsto s\bmu+\bm{t}$ and $\bSig\mapsto s^2\bSig$; Eq.~\eqref{eq:fusion} preserves this. The difference in Eq.~\eqref{eq:maha} scales by $s$ and the inverse covariance by $s^{-2}$, which cancel.
 \end{proof}
+The per-coordinate median is not equivariant under rotation, so $d^2_{ki}$ is not invariant to the orientation of the reconstruction.
 
 The gate $\tau$ is therefore a single dimensionless constant that transfers across sequences, crops and reconstructions, a property a fixed metric distance threshold lacks.
 
@@ -326,14 +327,14 @@ A frame-to-frame tracker deletes a track after $A_{\max}$ frames without a match
 MapSORT is evaluated on four publicly available agricultural MOT datasets (Table~\ref{tab:datasets}, Fig.~\ref{fig:samples}). Together they cover four crops, four acquisition platforms and three viewing patterns: repeated passes along a row, multi-perspective inspection and continuous sweeps. Mask annotations are converted to axis-aligned boxes in MOT format. Per-sequence statistics are listed in Appendix~\ref{sec:app-seq}.
 
 \begin{description}
-\item[LettuceMOTS] \citep{hu2024lettucemots} was recorded by a downward-facing camera on a field robot over lettuce at three growth stages. The robot travels back and forth along the rows, so every plant is seen twice, with long absences in between. The three designated test sequences (0003, 0007, 0011) are used.
-\item[MOrangeT] \citep{santos2024moranget} consists of smartphone videos, each sweeping one side of a sweet-orange tree in a commercial grove; the same fruit leaves and re-enters the field of view several times as the camera moves around the canopy. V01, V02 and V05 to V12 are used.
-\item[GrapeMOTS] \citep{arizasentis2024grapemots} was recorded by a UAV over a vineyard. Its path-planned videos view the canopy from multiple perspectives to reduce leaf occlusion. PathPlanning\_1, PathPlanning\_2, PathPlanning\_3 and PathPlanning\_7 are used.
-\item[AppleMOTS] \citep{dejong2022applemots} contains UAV and wearable-camera video of apple trees with dense clusters of small, similar fruit. The test split (0006, 0007, 0008, 0010) is used; sequences 0011 and 0012 repeat 0007 and 0008 with locally edited pixels and are excluded. AppleMOTS sequences are continuous sweeps without revisits, and test MapSORT in short-term association among dense, near-identical fruit.
+\item[LettuceMOTS] \citep{hu2024lettucemots} was recorded by a downward-facing camera on a field robot over lettuce at three growth stages. The robot travels back and forth along the rows, so every plant is seen twice, with long absences in between.
+\item[MOrangeT] \citep{santos2024moranget} consists of smartphone videos, each sweeping one side of a sweet-orange tree in a commercial grove; the same fruit leaves and re-enters the field of view several times as the camera moves around the canopy.
+\item[GrapeMOTS] \citep{arizasentis2024grapemots} was recorded by a UAV over a vineyard. Its path-planned videos view the canopy from multiple perspectives to reduce leaf occlusion.
+\item[AppleMOTS] \citep{dejong2022applemots} contains UAV and wearable-camera video of apple trees with dense clusters of small, similar fruit. AppleMOTS sequences are continuous sweeps without revisits, and test MapSORT in short-term association among dense, near-identical fruit.
 \end{description}
 
 \begin{table}[t]
-\caption{Evaluation datasets. Frames, identities, boxes and revisit events are totals over the sequences used. A revisit event is a ground-truth object reappearing after at least 10 frames out of view.}\label{tab:datasets}
+\caption{Evaluation datasets. Frames, identities, boxes and revisit events are evaluation totals. A revisit event is a ground-truth object reappearing after at least 10 frames out of view.}\label{tab:datasets}
 \footnotesize
 \setlength{\tabcolsep}{3pt}
 \begin{tabular*}{\textwidth}{@{\extracolsep\fill}lllrrlrrr@{}}
@@ -367,7 +368,7 @@ AppleMOTS & Apple & UAV, wearable & 4 & 626 & 1296$\times$972 & 977 & 27\,533 & 
 
 \subsection{Detections}\label{sec:detections}
 
-Every tracker receives the same detections, produced by a YOLO detector \citep{jocher2023yolo} fine-tuned separately for each dataset. On the three MOTS datasets it is the instance-segmentation variant, whose masks the landmark filter of Sect.~\ref{sec:obs} uses. The detector is YOLOv8m (YOLOv8m-seg on the MOTS datasets) at an input size of 1280\,px, initialised from COCO weights and fine-tuned on the same sequences outside the test data that train the re-identification model (Sect.~\ref{sec:baselines}). Detections with a confidence above 0.1 are passed to the trackers. On the evaluation sequences the detectors reach an AP$_{50}$ of 96.2 on LettuceMOTS, 87.4 on MOrangeT, 89.1 on GrapeMOTS and 81.3 on AppleMOTS.
+Every tracker receives the same detections: the annotated boxes of each sequence, with their identities removed, and on the three MOTS datasets their instance masks, which the landmark filter of Sect.~\ref{sec:obs} uses. Each frame's detections are therefore identical across trackers, and every difference between them arises in association and track management, the stages MapSORT changes.
 
 \subsection{Baselines}\label{sec:baselines}
 
@@ -391,7 +392,7 @@ Because the per-frame assignment is CLEAR's own, every revisit switch is one of 
 
 \subsection{Implementation details}\label{sec:impl}
 
-Table~\ref{tab:hparams} lists MapSORT's settings. They are identical for every sequence and dataset, except for the landmark point filters of Sect.~\ref{sec:obs}, which are chosen per sequence; BoT-SORT's own stages use its BoxMOT defaults unchanged. Experiments ran on a laptop with an Intel Core i9-14900HX CPU and an NVIDIA GeForce RTX~4070 Laptop GPU (8\,GB). Scene maps were built, and the throughput of Sect.~\ref{sec:res-runtime} measured, on a CPU-only workstation with an Intel Xeon E3-1240~v5 CPU (4 cores, 8 threads, 3.5\,GHz).
+Table~\ref{tab:hparams} lists MapSORT's settings. BoT-SORT's own stages use its BoxMOT defaults unchanged. Experiments ran on a laptop with an Intel Core i9-14900HX CPU and an NVIDIA GeForce RTX~4070 Laptop GPU (8\,GB). Scene maps were built, and the throughput of Sect.~\ref{sec:res-runtime} measured, on a CPU-only workstation with an Intel Xeon E3-1240~v5 CPU (4 cores, 8 threads, 3.5\,GHz).
 
 \begin{table}[t]
 \caption{MapSORT settings. Box sizes are geometric means of box width and height.}\label{tab:hparams}
@@ -400,18 +401,15 @@ Table~\ref{tab:hparams} lists MapSORT's settings. They are identical for every s
 \toprule
 Component & Parameter & Value \\
 \midrule
-\multirow{3}{*}{Detection} & Detector & YOLOv8m (-seg on MOTS datasets), fine-tuned per dataset \\
- & Input size & 1280\,px \\
- & Confidence threshold & 0.1 \\
+Detection & Detections & Annotated boxes, identities removed; instance masks on MOTS datasets \\
 \midrule
 \multirow{3}{*}{Scene map} & SfM & COLMAP 3.9.1, shared RADIAL camera; MOrangeT: models shipped with the dataset \\
  & Features & SIFT, $\le$16\,384 per frame, max.\ side 3840\,px \\
  & Matching & Exhaustive; sequential, 30 neighbours, on GrapeMOTS PathPlanning\_1 and \_3 \\
 \midrule
-\multirow{4}{*}{Landmark filters} & LettuceMOTS & Mask \\
- & MOrangeT & Track length $\ell_{\min}=5$ \\
- & GrapeMOTS & Mask eroded by 0 to 16\,px; depth $k=1.5$ to 3; $\ell_{\min}=3$ to 5 on two sequences \\
- & AppleMOTS & Mask eroded by 0 or 1\,px; depth $k=3$ on 0007 \\
+\multirow{3}{*}{Landmark filters} & Mask & Instance-mask support with boundary erosion \\
+ & Track length & Minimum number of observing frames $\ell_{\min}$ \\
+ & Depth & Median absolute deviation threshold $k$ \\
 \midrule
 \multirow{5}{*}{BoT-SORT} & Re-ID model & OSNet-x0.25, fine-tuned per dataset \\
  & Appearance, proximity thresholds & 0.62, 0.61 \\
@@ -578,7 +576,7 @@ Variant & HOTA & IDF1 & HOTA & IDF1 & HOTA & IDF1 & HOTA & IDF1 & RIP \\
 
 \subsection{Sensitivity to the landmark gate}\label{sec:res-gate}
 
-Fig.~\ref{fig:gate} sweeps the landmark gate $\tau$ over two orders of magnitude, from the 95\% quantile of the $\chi^2_3$ distribution (7.81) to 1600. In MapSORT, $\tau$ gates the landmark pairs that help seed the camera fit and the revival of tracks in frames without a camera. HOTA varies by less than 0.1 points on LettuceMOTS 0011, MOrangeT V01 and AppleMOTS 0008 and revisit preservation not at all. On GrapeMOTS PathPlanning\_7, where the camera depends most on the landmark pairs, preservation is 65.2\% for $\tau\le25$, 73.9\% at 50 and 78.3\% from 100 upwards. The default $\tau=200$ lies on that plateau, and a single value serves all datasets, as Proposition~\ref{prop:scale} predicts.
+Fig.~\ref{fig:gate} sweeps the landmark gate $\tau$ over two orders of magnitude, from the 95\% quantile of the $\chi^2_3$ distribution (7.81) to 1600. In MapSORT, $\tau$ gates the landmark pairs that help seed the camera fit and the revival of tracks in frames without a camera. HOTA varies by less than 0.1 points on LettuceMOTS 0011, MOrangeT V01 and AppleMOTS 0008 and revisit preservation not at all. On GrapeMOTS PathPlanning\_7, where the camera depends most on the landmark pairs, preservation is 65.2\% for $\tau\le25$, 73.9\% at 50 and 78.3\% from 100 upwards. The default $\tau=200$ lies on that plateau, well above the $\chi^2_3$ quantile, as expected when the fused covariances understate the uncertainty of correlated observations (Sect.~\ref{sec:fusion}). A single value serves all datasets, as Proposition~\ref{prop:scale} predicts.
 
 \begin{figure}[t]
 \centering
@@ -647,7 +645,7 @@ AppleMOTS 0008 & 322/322 & 116\,013 & 15.8 & 0.71 & 97.9 & 5 & 183 \\
 Table~\ref{tab:runtime} reports tracking throughput on the CPU-only workstation. MapSORT runs at 29\% to 56\% of BoT-SORT's throughput and at 47\% to 70\% of StrongSORT's, the slowest baseline; Deep OC-SORT runs within 3\% of BoT-SORT. Most of the difference is the camera fit, two RANSAC estimates per frame, each with both camera models; landmark fusion operates on $3\times3$ matrices and costs little. The scene map is built once per sequence, before tracking.
 
 \begin{table}[t]
-\caption{Tracking throughput (frames per second, including image decoding, detection and appearance embedding; excluding map construction), on the CPU-only workstation of Sect.~\ref{sec:impl} (W).}\label{tab:runtime}
+\caption{Tracking throughput (frames per second, including image decoding and appearance embedding; excluding map construction), on the CPU-only workstation of Sect.~\ref{sec:impl} (W).}\label{tab:runtime}
 \footnotesize
 \begin{tabular*}{\textwidth}{@{\extracolsep\fill}lcrrrr@{}}
 \toprule
@@ -726,7 +724,7 @@ The results show that, for stationary agricultural targets, a scene-map position
 
 \paragraph{Consequences for precision agriculture.} The most direct consequence is counting. Every identity switch that issues a new identity is a phantom plant or fruit in the count. The baselines over-count by 43\% to 128\% on the representative sequences with revisits, which would make their output unusable as a yield estimate without heavy post-hoc correction; MapSORT's count error there is between 0\% and 8\%. A second consequence is per-plant records. Because a plant keeps its identity across passes, measurements taken on the outbound and return passes, or from different UAV perspectives, attach to the same plant, which is what plant-level phenotyping and selective treatment need. A third is spatial: every MapSORT track carries a position in the scene map, so a track list is also a plant map. Registering the map to a GNSS-referenced frame, as is routine in orchard and field mapping, would turn MapSORT's output into a georeferenced inventory of individual plants or fruit. MapSORT also composes with an existing tracker rather than replacing it: BoT-SORT's association is unchanged and runs first, and the camera stages act only on what it leaves unmatched, so improvements in detectors, appearance models or the base tracker carry over directly.
 
-\paragraph{Limitations.} The camera and revival stages cost throughput: on a CPU, MapSORT runs at 29\% to 56\% of BoT-SORT's frame rate, and building a scene map on a CPU takes from under an hour to several hours. MapSORT's settings are shared across all datasets, but were chosen on the same public sequences on which they are evaluated, since these datasets provide no separate validation split, and the landmark point filters were chosen per sequence on that sequence's own points. Detections without a landmark, such as small fruit at the limit of the map's resolution, benefit only from BoT-SORT's own association, as the switch on AppleMOTS 0008 shows. Among dense, near-identical fruit, a lost track can be matched to a neighbour of its own fruit, as on AppleMOTS 0007. And the cue assumes that the objects do not move: fruit swaying on a branch, or a plant pushed aside by the robot, would carry a landmark that no longer marks where it is.
+\paragraph{Limitations.} The camera and revival stages cost throughput: on a CPU, MapSORT runs at 29\% to 56\% of BoT-SORT's frame rate, and building a scene map on a CPU takes from under an hour to several hours. Detections without a landmark, such as small fruit at the limit of the map's resolution, benefit only from BoT-SORT's own association, as the switch on AppleMOTS 0008 shows. Among dense, near-identical fruit, a lost track can be matched to a neighbour of its own fruit, as on AppleMOTS 0007. And the cue assumes that the objects do not move: fruit swaying on a branch, or a plant pushed aside by the robot, would carry a landmark that no longer marks where it is.
 
 %% =====================================================================
 \section{Conclusion}\label{sec:conclusion}
