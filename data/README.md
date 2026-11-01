@@ -21,7 +21,14 @@ data/<dataset>/
   landmarks/<seq>/<backend>.npz  per-detection landmark observations
   reid/<seq>/<model>.npz   per-detection ReID embeddings, cached
   recon/<seq>/             offline SfM reconstruction (RLoc-style pseudo-GT)
+  yolo/                    detector fine-tuning view: images/, labels/ per split, data.yaml, manifest.json
 ```
+
+`yolo/` is built by `scripts/yolo/export_yolo.py` from `mot/` and the raw
+instance masks, with splits, strides and image size in
+[config/yolo.yaml](../config/yolo.yaml): segmentation polygons for the MOTS
+datasets, `gt.txt` boxes for MOrangeT. Frames are downscaled JPEGs, so the
+directory is compact enough to copy to the training machine.
 
 `landmarks/` is per sequence and then per mapping backend — `sfm.npz` for the
 offline COLMAP baseline, later `cut3r.npz` for the online one — so the two are

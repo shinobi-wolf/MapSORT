@@ -1,0 +1,29 @@
+# YOLO detector fine-tuning data, exported by scripts/yolo/export_yolo.py to data/<dataset>/yolo/.
+# train and val are the sequences of config/reid_finetune.yaml; test is the dataset's whole test split.
+# Frames are scaled down to long_side (the training imgsz, so nothing YOLO would see is lost) and
+# stored as JPEG. Neighbouring frames are near-duplicates, hence the strides.
+
+quality: 90  # JPEG; 95 is ~40% larger for no detection gain
+
+datasets:
+  applemots:
+    task: segment
+    name: apple
+    long_side: 1280
+    train: ["0000", "0001", "0002", "0003", "0004"]
+    val: ["0005"]
+    stride: {train: 3, val: 5, test: 1}
+  grapemots:
+    task: segment
+    name: grape
+    long_side: 1280
+    train: ["PathPlanning_4", "PathPlanning_5", "PathPlanning_6"]
+    val: ["PathPlanning_8"]
+    stride: {train: 3, val: 5, test: 1}
+  moranget:
+    task: detect
+    name: orange
+    long_side: 1280
+    train: ["V03"]
+    val: ["V04"]
+    stride: {train: 2, val: 5, test: 1}
